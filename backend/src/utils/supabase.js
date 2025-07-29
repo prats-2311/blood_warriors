@@ -1,10 +1,14 @@
 const { createClient } = require("@supabase/supabase-js");
 
-// Initialize Supabase client with better error handling
-const supabaseUrl = process.env.SUPABASE_URL || "http://127.0.0.1:54321";
-const supabaseKey =
-  process.env.SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
+// Initialize Supabase client with better error handling and retry logic
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    "Missing Supabase environment variables. Please check your .env file."
+  );
+}
 
 console.log("Initializing Supabase client with URL:", supabaseUrl);
 
@@ -22,27 +26,51 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
       "X-Client-Info": "blood-warriors-backend",
     },
   },
+  // Add retry configuration
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
 });
 
-// Test connection on startup
-const testConnection = async () => {
-  try {
-    const { data, error } = await supabase
-      .from("bloodgroups")
-      .select("count")
-      .limit(1);
+// Enhanced connection test with retry logic
+const testConnection = async (retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      console.log(
+        `Testing Supabase connection (attempt ${i + 1}/${retries})...`
+      );
 
-    if (error) {
-      console.error("Supabase connection test failed:", error.message);
-    } else {
-      console.log("✅ Supabase connection test successful");
+      const { data, error } = await supabase
+        .from("bloodgroups")
+        .select("count")
+        .limit(1);
+
+      if (error) {
+        throw error;
+      }
+
+      console.log("✅ Supabase Cloud connection test successful");
+      return true;
+    } catch (err) {
+      console.error(`Connection attempt ${i + 1} failed:`, err.message);
+
+      if (i < retries - 1) {
+        const delay = Math.pow(2, i) * 1000; // Exponential backoff
+        console.log(`Retrying in ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
     }
-  } catch (err) {
-    console.error("Supabase connection error:", err.message);
   }
+
+  console.error(
+    "❌ All connection attempts failed. Please check your network and Supabase configuration."
+  );
+  return false;
 };
 
-// Test connection after a short delay to allow services to start
-setTimeout(testConnection, 2000);
+// Test connection with retry logic
+setTimeout(() => testConnection(), 2000);
 
 module.exports = { supabase };

@@ -216,10 +216,16 @@ const register = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("Registration error details:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
     res.status(500).json({
       status: "error",
-      message: "Registration failed",
+      message: "Registration failed. Please try again.",
+      details:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
@@ -331,15 +337,26 @@ const getProfile = async (req, res) => {
         .select(
           `
           date_of_birth,
-          BloodGroups(group_name)
+          blood_group_id,
+          medical_conditions,
+          emergency_contact
         `
         )
         .eq("patient_id", userId)
         .single();
 
-      if (!patientError) {
+      if (!patientError && patientData) {
+        // Get blood group name
+        const { data: bloodGroup } = await supabase
+          .from("bloodgroups")
+          .select("group_name")
+          .eq("blood_group_id", patientData.blood_group_id)
+          .single();
+
         profileData.date_of_birth = patientData.date_of_birth;
-        profileData.blood_group = patientData.BloodGroups.group_name;
+        profileData.blood_group = bloodGroup?.group_name || "Unknown";
+        profileData.medical_conditions = patientData.medical_conditions;
+        profileData.emergency_contact = patientData.emergency_contact;
       }
     } else if (userType === "Donor") {
       const { data: donorData, error: donorError } = await supabase
@@ -348,18 +365,33 @@ const getProfile = async (req, res) => {
           `
           last_donation_date,
           is_available_for_sos,
-          BloodGroups(group_name),
-          qloo_taste_keywords
+          latitude,
+          longitude,
+          qloo_taste_keywords,
+          blood_group_id,
+          donation_count
         `
         )
         .eq("donor_id", userId)
         .single();
 
-      if (!donorError) {
+      if (!donorError && donorData) {
+        // Get blood group name
+        const { data: bloodGroup } = await supabase
+          .from("bloodgroups")
+          .select("group_name")
+          .eq("blood_group_id", donorData.blood_group_id)
+          .single();
+
         profileData.last_donation_date = donorData.last_donation_date;
         profileData.is_available_for_sos = donorData.is_available_for_sos;
-        profileData.blood_group = donorData.BloodGroups.group_name;
-        profileData.interests = donorData.qloo_taste_keywords;
+        profileData.blood_group = bloodGroup?.group_name || "Unknown";
+        profileData.interests = donorData.qloo_taste_keywords || [];
+        profileData.location = {
+          latitude: donorData.latitude,
+          longitude: donorData.longitude,
+        };
+        profileData.donation_count = donorData.donation_count || 0;
       }
     }
 

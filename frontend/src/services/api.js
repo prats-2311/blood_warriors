@@ -2,7 +2,7 @@ import axios from "axios";
 import { supabase } from "../utils/supabase";
 
 const API_BASE_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:3000/api";
+  process.env.REACT_APP_API_URL || "http://localhost:4000/api";
 
 // Create axios instance
 const api = axios.create({

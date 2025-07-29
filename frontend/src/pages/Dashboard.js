@@ -5,7 +5,7 @@ import { donorService } from "../services/donorService";
 import { Link } from "react-router-dom";
 
 const Dashboard = () => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [stats, setStats] = useState({
     totalRequests: 0,
     activeRequests: 0,
@@ -17,43 +17,59 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (profile && user) {
+      fetchDashboardData();
+    }
+  }, [profile, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchDashboardData = async () => {
+    if (!profile || !user) {
+      console.log("No profile or user found, skipping dashboard data fetch");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
 
-      // Fetch recent requests
-      const requestsData = await requestService.getRequests();
-      setRecentRequests(requestsData.data.slice(0, 5));
+      // Fetch recent requests with error handling
+      try {
+        const requestsData = await requestService.getRequests();
+        setRecentRequests(requestsData.data.slice(0, 5));
 
-      if (profile?.user_type === "Patient") {
-        // Patient-specific stats
-        const myRequests = requestsData.data.filter(
-          (req) => req.patient_id === profile.user_id
-        );
-        setStats((prev) => ({
-          ...prev,
-          totalRequests: myRequests.length,
-          activeRequests: myRequests.filter((req) => req.status === "Open")
-            .length,
-        }));
-      } else if (profile?.user_type === "Donor") {
-        // Donor-specific stats
-        const notifications = await donorService.getNotifications();
-        setRecentNotifications(notifications.data.slice(0, 5));
+        // Process requests data for stats
+        if (profile?.user_type === "Patient") {
+          const myRequests = requestsData.data.filter(
+            (req) => req.patient_id === profile.user_id
+          );
+          setStats((prev) => ({
+            ...prev,
+            totalRequests: myRequests.length,
+            activeRequests: myRequests.filter((req) => req.status === "Open")
+              .length,
+          }));
+        }
+      } catch (requestError) {
+        console.log("Could not fetch requests:", requestError.message);
+        // Set empty data instead of failing completely
+        setRecentRequests([]);
+      }
 
-        const coupons = await donorService.getCoupons("Issued");
+      // Fetch donor-specific data
+      if (profile?.user_type === "Donor") {
+        try {
+          const notifications = await donorService.getNotifications();
+          setRecentNotifications(notifications.data.slice(0, 5));
 
-        setStats((prev) => ({
-          ...prev,
-          totalRequests: requestsData.data.length,
-          activeRequests: requestsData.data.filter(
-            (req) => req.status === "Open"
-          ).length,
-          availableCoupons: coupons.data.length,
-        }));
+          const coupons = await donorService.getCoupons("Issued");
+          setStats((prev) => ({
+            ...prev,
+            availableCoupons: coupons.data.length,
+          }));
+        } catch (donorError) {
+          console.log("Could not fetch donor data:", donorError.message);
+          setRecentNotifications([]);
+        }
       }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
