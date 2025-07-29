@@ -20,6 +20,8 @@ import BloodBanks from "./pages/BloodBanks";
 import CareBot from "./pages/CareBot";
 import Notifications from "./pages/Notifications";
 import Coupons from "./pages/Coupons";
+import ConnectionStatus from "./components/ConnectionStatus";
+import SupabaseTest from "./components/SupabaseTest";
 import "./App.css";
 
 function App() {
@@ -27,6 +29,8 @@ function App() {
     <AuthProvider>
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <div className="App">
+          <ConnectionStatus />
+          {process.env.NODE_ENV === "development" && <SupabaseTest />}
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />

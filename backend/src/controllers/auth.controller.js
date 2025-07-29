@@ -205,14 +205,41 @@ const register = async (req, res) => {
       }
     }
 
+    // After successful registration, automatically sign in the user
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+    if (signInError) {
+      console.error("Auto sign-in failed:", signInError);
+      // Registration was successful, but auto sign-in failed
+      return res.status(201).json({
+        status: "success",
+        message:
+          "User registered successfully. Please login with your credentials.",
+        data: {
+          user_id: userData.user_id,
+          email: userData.email,
+          full_name: userData.full_name,
+          user_type: userData.user_type,
+          needsLogin: true,
+        },
+      });
+    }
+
+    // Registration and auto sign-in successful
     res.status(201).json({
       status: "success",
-      message: "User registered successfully",
+      message: "User registered and logged in successfully",
       data: {
         user_id: userData.user_id,
         email: userData.email,
         full_name: userData.full_name,
         user_type: userData.user_type,
+        session: signInData.session,
+        access_token: signInData.session.access_token,
       },
     });
   } catch (error) {

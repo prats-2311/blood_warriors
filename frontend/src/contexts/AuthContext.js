@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
-import { supabase } from "../utils/supabase";
+import { supabase, withRetry } from "../utils/supabase";
 
 const AuthContext = createContext();
 
@@ -50,21 +50,36 @@ export const AuthProvider = ({ children }) => {
 
   const fetchProfile = async (token) => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/auth/profile`,
-        {
+      const response = await withRetry(async () => {
+        return fetch(`${process.env.REACT_APP_API_URL}/auth/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
+            Connection: "keep-alive",
           },
-        }
-      );
+          signal: AbortSignal.timeout(30000), // 30 second timeout
+        });
+      });
 
       if (response.ok) {
         const data = await response.json();
         setProfile(data.data);
+      } else if (response.status === 401) {
+        // Token is invalid or expired, sign out
+        console.log("Token invalid, signing out");
+        await supabase.auth.signOut();
+      } else {
+        console.error(
+          "Profile fetch failed:",
+          response.status,
+          response.statusText
+        );
       }
     } catch (error) {
       console.error("Fetch profile error:", error);
+      // Don't sign out on network errors, just log the error
+      if (error.name === "AbortError") {
+        console.log("Profile fetch timed out");
+      }
     }
   };
 
@@ -113,7 +128,29 @@ export const AuthProvider = ({ children }) => {
         };
       }
 
-      // If no confirmation needed, try to login automatically
+      // If registration includes a session token, set it
+      if (data.data?.session) {
+        // Set the session in Supabase client
+        await supabase.auth.setSession({
+          access_token: data.data.access_token,
+          refresh_token: data.data.session.refresh_token,
+        });
+
+        // The auth state change listener will handle setting user and profile
+        return data;
+      }
+
+      // If no session but needsLogin flag, user needs to login manually
+      if (data.data?.needsLogin) {
+        return {
+          ...data,
+          needsLogin: true,
+          message:
+            "Registration successful! Please login with your credentials.",
+        };
+      }
+
+      // Fallback: try to login automatically
       try {
         await login(userData.email, userData.password);
       } catch (loginError) {

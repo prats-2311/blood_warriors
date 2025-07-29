@@ -84,14 +84,21 @@ const Register = () => {
       // Check if email confirmation is required
       if (result?.needsConfirmation) {
         setError(null);
-        // Show success message instead of error
         alert(
           "Registration successful! Please check your email to confirm your account, then you can login."
         );
         navigate("/login");
+      } else if (result?.needsLogin) {
+        setError(null);
+        alert("Registration successful! Please login with your credentials.");
+        navigate("/login");
       } else {
         // Registration successful and logged in
-        navigate("/dashboard");
+        setError(null);
+        // Small delay to ensure auth state is updated
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 500);
       }
     } catch (error) {
       setError(error.message || "Failed to register");

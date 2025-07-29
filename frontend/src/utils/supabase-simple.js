@@ -9,8 +9,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-console.log("Initializing Supabase client with URL:", supabaseUrl);
+console.log("Initializing simple Supabase client with URL:", supabaseUrl);
 
+// Simple configuration without custom fetch
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
@@ -23,31 +24,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   global: {
     headers: {
       "X-Client-Info": "blood-warriors-frontend",
-      Connection: "keep-alive",
-    },
-    fetch: (url, options = {}) => {
-      // Add timeout and retry logic to all requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      return fetch(url, {
-        ...options,
-        signal: controller.signal,
-        headers: {
-          // Preserve existing headers (including API key)
-          ...options.headers,
-          // Add connection optimization headers
-          Connection: "keep-alive",
-          "Keep-Alive": "timeout=30, max=100",
-        },
-      }).finally(() => {
-        clearTimeout(timeoutId);
-      });
     },
   },
 });
 
-// Retry wrapper for frontend operations
+// Simple retry wrapper
 export const withRetry = async (
   operation,
   maxRetries = 3,
@@ -63,22 +44,15 @@ export const withRetry = async (
         error.code === "ETIMEDOUT" ||
         error.message?.includes("fetch failed") ||
         error.message?.includes("network error") ||
-        error.message?.includes("connection") ||
-        error.name === "FetchError" ||
-        error.message?.includes("NetworkError");
+        error.name === "FetchError";
 
       if (isNetworkError && attempt < maxRetries) {
-        const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
-        console.log(
-          `Network error on attempt ${attempt}/${maxRetries}. Retrying in ${delay}ms...`
-        );
-        console.log(`Error details:`, error.message);
-
+        const delay = baseDelay * Math.pow(2, attempt - 1);
+        console.log(`Retrying in ${delay}ms... (attempt ${attempt})`);
         await new Promise((resolve) => setTimeout(resolve, delay));
         continue;
       }
 
-      // If it's not a network error or we've exhausted retries, throw the error
       throw error;
     }
   }

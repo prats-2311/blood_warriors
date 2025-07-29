@@ -614,3 +614,53 @@ body {
     font-size: 24px;
   }
 }
+/* Connection Status Styles */
+.connection-status {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  padding: 8px 16px;
+  text-align: center;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.connection-status.online {
+  background-color: #10b981;
+  color: white;
+}
+
+.connection-status.offline {
+  background-color: #ef4444;
+  color: white;
+}
+
+.connection-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.green {
+  background-color: #22c55e;
+}
+
+.status-dot.red {
+  background-color: #ef4444;
+}
+
+.connection-message {
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: 0.9;
+}
