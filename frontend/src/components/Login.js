@@ -18,7 +18,7 @@ const Login = () => {
       setLoading(true);
 
       await login(email, password);
-      navigate("/dashboard");
+      navigate("/app/dashboard");
     } catch (error) {
       setError(error.message || "Failed to login");
       console.error("Login error:", error);

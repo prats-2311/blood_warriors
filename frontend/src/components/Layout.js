@@ -19,23 +19,23 @@ const Layout = () => {
   const getPageTitle = () => {
     const path = location.pathname;
     switch (path) {
-      case "/dashboard":
+      case "/app/dashboard":
         return "Dashboard";
-      case "/profile":
+      case "/app/profile":
         return "Profile";
-      case "/requests":
+      case "/app/requests":
         return "Blood Requests";
-      case "/requests/create":
+      case "/app/requests/create":
         return "Create Request";
-      case "/donors":
+      case "/app/donors":
         return "Donors";
-      case "/blood-banks":
+      case "/app/blood-banks":
         return "Blood Banks";
-      case "/carebot":
+      case "/app/carebot":
         return "CareBot";
-      case "/notifications":
+      case "/app/notifications":
         return "Notifications";
-      case "/coupons":
+      case "/app/coupons":
         return "Coupons";
       default:
         return "Blood Warriors";
@@ -43,24 +43,24 @@ const Layout = () => {
   };
 
   const navigationItems = [
-    { path: "/dashboard", label: "Dashboard", icon: "🏠" },
-    { path: "/profile", label: "Profile", icon: "👤" },
+    { path: "/app/dashboard", label: "Dashboard", icon: "🏠" },
+    { path: "/app/profile", label: "Profile", icon: "👤" },
     ...(profile?.user_type === "Patient"
       ? [
-          { path: "/requests", label: "My Requests", icon: "🩸" },
-          { path: "/requests/create", label: "Create Request", icon: "➕" },
+          { path: "/app/requests", label: "My Requests", icon: "🩸" },
+          { path: "/app/requests/create", label: "Create Request", icon: "➕" },
         ]
       : []),
     ...(profile?.user_type === "Donor"
       ? [
-          { path: "/requests", label: "Available Requests", icon: "🩸" },
-          { path: "/notifications", label: "Notifications", icon: "🔔" },
-          { path: "/coupons", label: "My Coupons", icon: "🎫" },
+          { path: "/app/requests", label: "Available Requests", icon: "🩸" },
+          { path: "/app/notifications", label: "Notifications", icon: "🔔" },
+          { path: "/app/coupons", label: "My Coupons", icon: "🎫" },
         ]
       : []),
-    { path: "/donors", label: "Find Donors", icon: "🔍" },
-    { path: "/blood-banks", label: "Blood Banks", icon: "🏥" },
-    { path: "/carebot", label: "CareBot", icon: "🤖" },
+    { path: "/app/donors", label: "Find Donors", icon: "🔍" },
+    { path: "/app/blood-banks", label: "Blood Banks", icon: "🏥" },
+    { path: "/app/carebot", label: "CareBot", icon: "🤖" },
   ];
 
   return (

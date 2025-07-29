@@ -21,7 +21,7 @@ const AuthCallback = () => {
         if (data?.session) {
           // User is confirmed and logged in
           console.log("Email confirmed successfully!");
-          navigate("/dashboard");
+          navigate("/app/dashboard");
         } else {
           // Check for error in URL params
           const errorDescription = searchParams.get("error_description");

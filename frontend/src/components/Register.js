@@ -97,7 +97,7 @@ const Register = () => {
         setError(null);
         // Small delay to ensure auth state is updated
         setTimeout(() => {
-          navigate("/dashboard");
+          navigate("/app/dashboard");
         }, 500);
       }
     } catch (error) {

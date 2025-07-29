@@ -16,12 +16,28 @@ export const AuthProvider = ({ children }) => {
           data: { session },
         } = await supabase.auth.getSession();
 
-        if (session) {
+        if (session && session.user && session.access_token) {
+          // Validate the session before using it
+          const {
+            data: { user },
+            error: tokenError,
+          } = await supabase.auth.getUser(session.access_token);
+
+          if (tokenError || !user) {
+            console.log("Invalid session found, clearing...");
+            await supabase.auth.signOut();
+            return;
+          }
+
           setUser(session.user);
           await fetchProfile(session.access_token);
+        } else {
+          console.log("No valid session found");
         }
       } catch (error) {
         console.error("Session check error:", error);
+        // Clear potentially corrupted session
+        await supabase.auth.signOut();
       } finally {
         setLoading(false);
       }
@@ -33,9 +49,14 @@ export const AuthProvider = ({ children }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
+      console.log("Auth state change:", event, !!session);
+
+      if (session && session.user) {
         setUser(session.user);
-        await fetchProfile(session.access_token);
+        // Only fetch profile if we have a valid session with access token
+        if (session.access_token) {
+          await fetchProfile(session.access_token);
+        }
       } else {
         setUser(null);
         setProfile(null);
@@ -49,7 +70,27 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const fetchProfile = async (token) => {
+    // Don't fetch profile if no token provided
+    if (!token) {
+      console.log("No token provided for profile fetch");
+      return;
+    }
+
     try {
+      console.log("Fetching profile with token...");
+
+      // First validate the token with Supabase
+      const {
+        data: { user },
+        error: tokenError,
+      } = await supabase.auth.getUser(token);
+
+      if (tokenError || !user) {
+        console.log("Token validation failed:", tokenError?.message);
+        await supabase.auth.signOut();
+        return;
+      }
+
       const response = await withRetry(async () => {
         return fetch(`${process.env.REACT_APP_API_URL}/auth/profile`, {
           headers: {
@@ -62,6 +103,7 @@ export const AuthProvider = ({ children }) => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log("Profile fetched successfully");
         setProfile(data.data);
       } else if (response.status === 401) {
         // Token is invalid or expired, sign out

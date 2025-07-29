@@ -21,7 +21,7 @@ import CareBot from "./pages/CareBot";
 import Notifications from "./pages/Notifications";
 import Coupons from "./pages/Coupons";
 import ConnectionStatus from "./components/ConnectionStatus";
-import SupabaseTest from "./components/SupabaseTest";
+import SessionDebug from "./components/SessionDebug";
 import "./App.css";
 
 function App() {
@@ -30,23 +30,26 @@ function App() {
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <div className="App">
           <ConnectionStatus />
-          {process.env.NODE_ENV === "development" && <SupabaseTest />}
+          <SessionDebug />
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
 
+            {/* Default route - redirect to login */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+
             {/* Protected routes */}
             <Route
-              path="/"
+              path="/app"
               element={
                 <ProtectedRoute>
                   <Layout />
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route index element={<Navigate to="/app/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="profile" element={<Profile />} />
               <Route path="requests" element={<Requests />} />
@@ -59,7 +62,7 @@ function App() {
             </Route>
 
             {/* Catch all route */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </div>
       </Router>

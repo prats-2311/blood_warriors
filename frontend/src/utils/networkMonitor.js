@@ -1,3 +1,5 @@
+import React from "react";
+
 // Network status monitoring utility
 class NetworkMonitor {
   constructor() {
@@ -58,8 +60,6 @@ class NetworkMonitor {
 }
 
 export const networkMonitor = new NetworkMonitor();
-
-import React from "react";
 
 // Hook for React components
 export const useNetworkStatus = () => {
