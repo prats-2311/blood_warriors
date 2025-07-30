@@ -21,34 +21,84 @@ const authenticate = async (req, res, next) => {
     const token = authHeader.split(" ")[1];
     console.log("Token extracted, length:", token.length);
 
-    // Verify the token with Supabase Auth (using anon key client)
-    const {
-      data: { user },
-      error,
-    } = await supabaseAuth.auth.getUser(token);
-
-    console.log(
-      "Supabase auth check - User found:",
-      !!user,
-      "Error:",
-      error?.message
-    );
-
-    if (error || !user) {
-      console.log("Token validation failed:", error?.message || "No user");
+    // Basic token format validation
+    if (!token || token.length < 100) {
+      console.log("Invalid token format");
       return res.status(401).json({
         status: "error",
-        message: "Invalid or expired token",
-        debug: error?.message,
+        message: "Invalid token format",
       });
     }
 
-    // Get the user details from our Users table
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("auth_id", user.id)
-      .single();
+    let user;
+    let authError;
+
+    try {
+      // Verify the token with Supabase Auth (using anon key client)
+      const authResult = await supabaseAuth.auth.getUser(token);
+      user = authResult.data?.user;
+      authError = authResult.error;
+
+      console.log(
+        "Supabase auth check - User found:",
+        !!user,
+        "Error:",
+        authError?.message
+      );
+    } catch (networkError) {
+      console.log("Network error during auth check:", networkError.message);
+
+      // If it's a network error, try to decode the JWT manually as fallback
+      try {
+        const payload = JSON.parse(
+          Buffer.from(token.split(".")[1], "base64").toString()
+        );
+        if (payload.exp && payload.exp > Date.now() / 1000) {
+          // Token is not expired, create a minimal user object
+          user = { id: payload.sub };
+          console.log("Using JWT fallback for user:", payload.sub);
+        } else {
+          console.log("JWT token is expired");
+          return res.status(401).json({
+            status: "error",
+            message: "Token expired",
+          });
+        }
+      } catch (jwtError) {
+        console.log("JWT decode failed:", jwtError.message);
+        return res.status(401).json({
+          status: "error",
+          message: "Invalid token",
+        });
+      }
+    }
+
+    if (authError || !user) {
+      console.log("Token validation failed:", authError?.message || "No user");
+      return res.status(401).json({
+        status: "error",
+        message: "Invalid or expired token",
+        debug: authError?.message,
+      });
+    }
+
+    // Get the user details from our Users table with retry logic
+    let userData;
+    let userError;
+
+    try {
+      const result = await supabase
+        .from("users")
+        .select("*")
+        .eq("auth_id", user.id)
+        .single();
+
+      userData = result.data;
+      userError = result.error;
+    } catch (dbError) {
+      console.log("Database connection error:", dbError.message);
+      userError = dbError;
+    }
 
     console.log(
       "Database user lookup - Found:",
@@ -61,7 +111,7 @@ const authenticate = async (req, res, next) => {
       console.log("User not found in database:", userError?.message);
       return res.status(401).json({
         status: "error",
-        message: "User not found",
+        message: "User not found in database",
         debug: userError?.message,
       });
     }

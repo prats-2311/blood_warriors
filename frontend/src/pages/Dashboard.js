@@ -7,6 +7,7 @@ import {
   QuickActions,
   DashboardPreferences,
 } from "../components/dashboard";
+import AuthDebug from "../components/AuthDebug";
 
 const Dashboard = () => {
   const { profile } = useAuth();
@@ -73,6 +74,9 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard">
+      {/* Temporary debug component - remove in production */}
+      {process.env.NODE_ENV === "development" && <AuthDebug />}
+
       <div className="welcome-section">
         <div className="welcome-header">
           <div>

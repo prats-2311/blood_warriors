@@ -166,47 +166,59 @@ const login = async (req, res) => {
 
 const getProfile = async (req, res) => {
   try {
+    console.log("Getting profile for user:", req.user.email);
     const userId = req.user.user_id;
     const userType = req.user.user_type;
 
     let profileData = { ...req.user };
 
-    if (userType === "Patient") {
-      const { data: patientData } = await supabase
-        .from("patients")
-        .select("date_of_birth, blood_group_id")
-        .eq("patient_id", userId)
-        .single();
-
-      if (patientData) {
-        const { data: bloodGroup } = await supabase
-          .from("bloodgroups")
-          .select("group_name")
-          .eq("blood_group_id", patientData.blood_group_id)
+    // Add additional profile data based on user type
+    try {
+      if (userType === "Patient") {
+        const { data: patientData, error: patientError } = await supabase
+          .from("patients")
+          .select("date_of_birth, blood_group_id")
+          .eq("patient_id", userId)
           .single();
 
-        profileData.date_of_birth = patientData.date_of_birth;
-        profileData.blood_group = bloodGroup?.group_name;
-      }
-    } else if (userType === "Donor") {
-      const { data: donorData } = await supabase
-        .from("donors")
-        .select("blood_group_id, donation_count")
-        .eq("donor_id", userId)
-        .single();
+        if (patientError) {
+          console.log("Patient data fetch error:", patientError.message);
+        } else if (patientData) {
+          const { data: bloodGroup } = await supabase
+            .from("bloodgroups")
+            .select("group_name")
+            .eq("blood_group_id", patientData.blood_group_id)
+            .single();
 
-      if (donorData) {
-        const { data: bloodGroup } = await supabase
-          .from("bloodgroups")
-          .select("group_name")
-          .eq("blood_group_id", donorData.blood_group_id)
+          profileData.date_of_birth = patientData.date_of_birth;
+          profileData.blood_group = bloodGroup?.group_name;
+        }
+      } else if (userType === "Donor") {
+        const { data: donorData, error: donorError } = await supabase
+          .from("donors")
+          .select("blood_group_id, donation_count")
+          .eq("donor_id", userId)
           .single();
 
-        profileData.blood_group = bloodGroup?.group_name;
-        profileData.donation_count = donorData.donation_count || 0;
+        if (donorError) {
+          console.log("Donor data fetch error:", donorError.message);
+        } else if (donorData) {
+          const { data: bloodGroup } = await supabase
+            .from("bloodgroups")
+            .select("group_name")
+            .eq("blood_group_id", donorData.blood_group_id)
+            .single();
+
+          profileData.blood_group = bloodGroup?.group_name;
+          profileData.donation_count = donorData.donation_count || 0;
+        }
       }
+    } catch (profileError) {
+      console.log("Profile enhancement error:", profileError.message);
+      // Continue with basic profile data
     }
 
+    console.log("Profile data prepared successfully");
     res.status(200).json({
       status: "success",
       data: profileData,
@@ -216,6 +228,7 @@ const getProfile = async (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Failed to get profile",
+      debug: error.message,
     });
   }
 };
