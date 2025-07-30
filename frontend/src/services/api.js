@@ -17,15 +17,30 @@ const api = axios.create({
 });
 
 // Add auth token to requests
-api.interceptors.request.use(async (config) => {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (session?.access_token) {
-    config.headers.Authorization = `Bearer ${session.access_token}`;
+api.interceptors.request.use(
+  async (config) => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+        console.log("Added auth token to request:", config.url);
+      } else {
+        console.log("No session found for request:", config.url);
+      }
+    } catch (error) {
+      console.error("Error getting session for API request:", error);
+    }
+
+    return config;
+  },
+  (error) => {
+    console.error("Request interceptor error:", error);
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
 // Add retry logic for network errors
 api.interceptors.response.use(

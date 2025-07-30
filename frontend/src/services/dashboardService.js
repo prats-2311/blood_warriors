@@ -5,7 +5,7 @@ export const dashboardService = {
   getPatientStats: async (userId) => {
     try {
       const response = await api.get(`/dashboard/patient-stats/${userId}`);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error("Error fetching patient stats:", error);
       // Return mock data as fallback
@@ -24,7 +24,7 @@ export const dashboardService = {
   getDonorStats: async (userId) => {
     try {
       const response = await api.get(`/dashboard/donor-stats/${userId}`);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error("Error fetching donor stats:", error);
       // Return mock data as fallback
@@ -48,7 +48,7 @@ export const dashboardService = {
           : `/dashboard/available-requests?limit=${limit}&donor_id=${userId}`;
 
       const response = await api.get(endpoint);
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error("Error fetching recent requests:", error);
       // Return mock data as fallback

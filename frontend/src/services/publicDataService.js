@@ -4,7 +4,7 @@ export const publicDataService = {
   // Get all blood groups from bloodgroups table
   getBloodGroups: async () => {
     try {
-      const response = await api.get("/public/blood-groups");
+      const response = await api.get("/public-data/blood-groups");
       return response.data;
     } catch (error) {
       console.error("Error fetching blood groups:", error);
@@ -27,7 +27,7 @@ export const publicDataService = {
   // Get all blood components from bloodcomponents table
   getBloodComponents: async () => {
     try {
-      const response = await api.get("/public/blood-components");
+      const response = await api.get("/public-data/blood-components");
       return response.data;
     } catch (error) {
       console.error("Error fetching blood components:", error);
@@ -59,7 +59,7 @@ export const publicDataService = {
       }
       if (filters.limit) params.append("limit", filters.limit);
 
-      const response = await api.get(`/public/blood-banks?${params}`);
+      const response = await api.get(`/public-data/blood-banks?${params}`);
       return response.data;
     } catch (error) {
       console.error("Error fetching blood banks:", error);

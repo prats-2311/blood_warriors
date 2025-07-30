@@ -7,7 +7,11 @@ const authenticate = async (req, res, next) => {
   try {
     // Get the token from the Authorization header
     const authHeader = req.headers.authorization;
+    console.log("Auth middleware - checking request to:", req.path);
+    console.log("Auth header present:", !!authHeader);
+
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log("Missing or invalid auth header format");
       return res.status(401).json({
         status: "error",
         message: "Authentication required",
@@ -15,6 +19,7 @@ const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1];
+    console.log("Token extracted, length:", token.length);
 
     // Verify the token with Supabase Auth (using anon key client)
     const {
@@ -22,10 +27,19 @@ const authenticate = async (req, res, next) => {
       error,
     } = await supabaseAuth.auth.getUser(token);
 
+    console.log(
+      "Supabase auth check - User found:",
+      !!user,
+      "Error:",
+      error?.message
+    );
+
     if (error || !user) {
+      console.log("Token validation failed:", error?.message || "No user");
       return res.status(401).json({
         status: "error",
         message: "Invalid or expired token",
+        debug: error?.message,
       });
     }
 
@@ -36,15 +50,25 @@ const authenticate = async (req, res, next) => {
       .eq("auth_id", user.id)
       .single();
 
+    console.log(
+      "Database user lookup - Found:",
+      !!userData,
+      "Error:",
+      userError?.message
+    );
+
     if (userError || !userData) {
+      console.log("User not found in database:", userError?.message);
       return res.status(401).json({
         status: "error",
         message: "User not found",
+        debug: userError?.message,
       });
     }
 
     // Attach the user to the request object
     req.user = userData;
+    console.log("Authentication successful for user:", userData.email);
 
     next();
   } catch (error) {
@@ -52,6 +76,7 @@ const authenticate = async (req, res, next) => {
     res.status(500).json({
       status: "error",
       message: "Authentication failed",
+      debug: error.message,
     });
   }
 };

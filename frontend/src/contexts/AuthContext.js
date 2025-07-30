@@ -48,21 +48,43 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const fetchProfile = async (token) => {
-    if (!token) return;
+    if (!token) {
+      console.log("No token provided to fetchProfile");
+      return;
+    }
 
     try {
+      console.log(
+        "Fetching profile with token:",
+        token.substring(0, 20) + "..."
+      );
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/auth/profile`,
+        `${
+          process.env.REACT_APP_API_URL || "http://localhost:4000/api"
+        }/auth/profile`,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
+      console.log("Profile fetch response status:", response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log("Profile data received:", data);
         setProfile(data.data);
       } else if (response.status === 401) {
+        console.log("401 error - signing out user");
         await supabase.auth.signOut();
+        setUser(null);
+        setProfile(null);
+      } else {
+        console.log("Profile fetch failed with status:", response.status);
+        const errorData = await response.text();
+        console.log("Error response:", errorData);
       }
     } catch (error) {
       console.error("Profile fetch error:", error);
@@ -101,6 +123,43 @@ export const AuthProvider = ({ children }) => {
     setProfile(null);
   };
 
+  const updateProfile = async (profileData) => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("No active session");
+      }
+
+      const response = await fetch(
+        `${
+          process.env.REACT_APP_API_URL || "http://localhost:4000/api"
+        }/auth/profile`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(profileData),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update profile");
+      }
+
+      const data = await response.json();
+      setProfile(data.data);
+      return data;
+    } catch (error) {
+      console.error("Profile update error:", error);
+      throw error;
+    }
+  };
+
   const value = {
     user,
     profile,
@@ -108,6 +167,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

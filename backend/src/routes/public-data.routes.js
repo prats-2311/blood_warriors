@@ -66,14 +66,29 @@ router.get("/blood-components", async (req, res) => {
 });
 
 /**
- * Get all blood banks
+ * Get all blood banks with optional filtering
  */
 router.get("/blood-banks", async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from("bloodbanks")
-      .select("*")
-      .order("name");
+    const { city, state, category, limit } = req.query;
+
+    let query = supabase.from("bloodbanks").select("*").order("name");
+
+    // Apply filters if provided
+    if (city) {
+      query = query.ilike("city", `%${city}%`);
+    }
+    if (state) {
+      query = query.ilike("state", `%${state}%`);
+    }
+    if (category) {
+      query = query.eq("category", category);
+    }
+    if (limit) {
+      query = query.limit(parseInt(limit));
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching blood banks:", error);

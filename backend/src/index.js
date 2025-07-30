@@ -28,6 +28,7 @@ app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/requests", require("./routes/requests.routes"));
 app.use("/api/donors", require("./routes/donors.routes"));
 app.use("/api/public-data", require("./routes/public-data.routes"));
+app.use("/api/dashboard", require("./routes/dashboard.routes"));
 
 // 404 handler
 app.use((req, res) => {
