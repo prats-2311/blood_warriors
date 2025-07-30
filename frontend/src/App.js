@@ -10,7 +10,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
 import Login from "./components/Login";
 import Register from "./components/Register";
-import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Requests from "./pages/Requests";
@@ -20,25 +19,22 @@ import BloodBanks from "./pages/BloodBanks";
 import CareBot from "./pages/CareBot";
 import Notifications from "./pages/Notifications";
 import Coupons from "./pages/Coupons";
-import ConnectionStatus from "./components/ConnectionStatus";
-import SessionDebug from "./components/SessionDebug";
+import AuthCallback from "./pages/AuthCallback";
 import "./App.css";
 
 function App() {
   return (
     <AuthProvider>
-      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Router>
         <div className="App">
-          <ConnectionStatus />
-          <SessionDebug />
           <Routes>
+            {/* Default route - redirect to login */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
-
-            {/* Default route - redirect to login */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
 
             {/* Protected routes */}
             <Route

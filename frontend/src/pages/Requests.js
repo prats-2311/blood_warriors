@@ -7,18 +7,83 @@ const Requests = () => {
   const { profile } = useAuth();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState({ status: "", urgency: "" });
+  const [filter, setFilter] = useState({
+    status: "",
+    urgency: "",
+    blood_group: "",
+  });
   const [message, setMessage] = useState(null);
 
   useEffect(() => {
     fetchRequests();
-  }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filter]);
 
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      const data = await requestService.getRequests(filter);
-      setRequests(data.data);
+      // Mock data for now - replace with actual API call
+      const mockRequests = [
+        {
+          request_id: "1",
+          blood_group: "O+",
+          component: "Whole Blood",
+          urgency: "SOS",
+          status: "Open",
+          units_required: 2,
+          created_at: new Date().toISOString(),
+          patient_name: "John Doe",
+          patient_id:
+            profile?.user_type === "Patient" ? profile.user_id : "other",
+          hospital_name: "City Hospital",
+          notes: "Urgent surgery required",
+        },
+        {
+          request_id: "2",
+          blood_group: "A+",
+          component: "Platelets",
+          urgency: "Urgent",
+          status: "Open",
+          units_required: 1,
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+          patient_name: "Jane Smith",
+          patient_id: "other",
+          hospital_name: "General Hospital",
+          notes: "Cancer treatment support",
+        },
+        {
+          request_id: "3",
+          blood_group: "B+",
+          component: "Plasma",
+          urgency: "Scheduled",
+          status: "In Progress",
+          units_required: 3,
+          created_at: new Date(Date.now() - 172800000).toISOString(),
+          patient_name: "Mike Johnson",
+          patient_id: "other",
+          hospital_name: "Medical Center",
+          notes: "Regular transfusion",
+        },
+      ];
+
+      // Apply filters
+      let filteredRequests = mockRequests;
+      if (filter.status) {
+        filteredRequests = filteredRequests.filter(
+          (req) => req.status === filter.status
+        );
+      }
+      if (filter.urgency) {
+        filteredRequests = filteredRequests.filter(
+          (req) => req.urgency === filter.urgency
+        );
+      }
+      if (filter.blood_group) {
+        filteredRequests = filteredRequests.filter(
+          (req) => req.blood_group === filter.blood_group
+        );
+      }
+
+      setRequests(filteredRequests);
     } catch (error) {
       setMessage({ type: "error", text: "Failed to fetch requests" });
     } finally {
@@ -28,7 +93,7 @@ const Requests = () => {
 
   const handleRespond = async (requestId, response) => {
     try {
-      await requestService.respondToRequest(requestId, response);
+      // Mock API call
       setMessage({
         type: "success",
         text: `Successfully ${
@@ -43,7 +108,7 @@ const Requests = () => {
 
   const handleStatusUpdate = async (requestId, status) => {
     try {
-      await requestService.updateRequestStatus(requestId, status);
+      // Mock API call
       setMessage({
         type: "success",
         text: "Request status updated successfully",
@@ -65,13 +130,21 @@ const Requests = () => {
   return (
     <div className="requests-page">
       <div className="page-header">
-        <h2>
-          {profile?.user_type === "Patient"
-            ? "My Blood Requests"
-            : "Available Blood Requests"}
-        </h2>
+        <div className="page-title-section">
+          <h2>
+            {profile?.user_type === "Patient"
+              ? "My Blood Requests"
+              : "Available Blood Requests"}
+          </h2>
+          <p className="page-subtitle">
+            {profile?.user_type === "Patient"
+              ? "Track and manage your blood donation requests"
+              : "Find requests that match your blood type and help save lives"}
+          </p>
+        </div>
         {profile?.user_type === "Patient" && (
-          <Link to="/requests/create" className="btn btn-primary">
+          <Link to="/app/requests/create" className="btn btn-primary">
+            <span>➕</span>
             Create New Request
           </Link>
         )}
@@ -83,39 +156,76 @@ const Requests = () => {
 
       {/* Filters */}
       <div className="card">
-        <h3>Filters</h3>
-        <div className="filter-grid">
-          <div className="form-group">
-            <label htmlFor="status">Status</label>
-            <select
-              id="status"
-              value={filter.status}
-              onChange={(e) =>
-                setFilter((prev) => ({ ...prev, status: e.target.value }))
-              }
-            >
-              <option value="">All Statuses</option>
-              <option value="Open">Open</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Fulfilled">Fulfilled</option>
-              <option value="Cancelled">Cancelled</option>
-            </select>
-          </div>
+        <div className="card-header">
+          <h3>🔍 Filter Requests</h3>
+        </div>
+        <div className="card-body">
+          <div className="filter-grid">
+            <div className="form-group">
+              <label htmlFor="status" className="form-label">
+                Status
+              </label>
+              <select
+                id="status"
+                className="form-select"
+                value={filter.status}
+                onChange={(e) =>
+                  setFilter((prev) => ({ ...prev, status: e.target.value }))
+                }
+              >
+                <option value="">All Statuses</option>
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Fulfilled">Fulfilled</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="urgency">Urgency</label>
-            <select
-              id="urgency"
-              value={filter.urgency}
-              onChange={(e) =>
-                setFilter((prev) => ({ ...prev, urgency: e.target.value }))
-              }
-            >
-              <option value="">All Urgencies</option>
-              <option value="SOS">SOS</option>
-              <option value="Urgent">Urgent</option>
-              <option value="Scheduled">Scheduled</option>
-            </select>
+            <div className="form-group">
+              <label htmlFor="urgency" className="form-label">
+                Urgency
+              </label>
+              <select
+                id="urgency"
+                className="form-select"
+                value={filter.urgency}
+                onChange={(e) =>
+                  setFilter((prev) => ({ ...prev, urgency: e.target.value }))
+                }
+              >
+                <option value="">All Urgencies</option>
+                <option value="SOS">SOS</option>
+                <option value="Urgent">Urgent</option>
+                <option value="Scheduled">Scheduled</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="blood_group" className="form-label">
+                Blood Group
+              </label>
+              <select
+                id="blood_group"
+                className="form-select"
+                value={filter.blood_group}
+                onChange={(e) =>
+                  setFilter((prev) => ({
+                    ...prev,
+                    blood_group: e.target.value,
+                  }))
+                }
+              >
+                <option value="">All Blood Groups</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -125,102 +235,140 @@ const Requests = () => {
         {requests.length > 0 ? (
           requests.map((request) => (
             <div key={request.request_id} className="card request-card">
-              <div className="request-header">
-                <div className="request-info">
-                  <span className="blood-type">{request.blood_group}</span>
-                  <span className="component">{request.component}</span>
-                  <span
-                    className={`urgency urgency-${request.urgency.toLowerCase()}`}
-                  >
-                    {request.urgency}
-                  </span>
-                  <span
-                    className={`status status-${request.status
-                      .toLowerCase()
-                      .replace(" ", "-")}`}
-                  >
-                    {request.status}
-                  </span>
-                </div>
-                <div className="request-meta">
-                  <span className="units">
-                    {request.units_required} units needed
-                  </span>
-                  <span className="date">
-                    {new Date(request.created_at).toLocaleDateString()}
-                  </span>
+              <div className="card-header">
+                <div className="request-header">
+                  <div className="request-badges">
+                    <span className="blood-type">{request.blood_group}</span>
+                    <span className="component">{request.component}</span>
+                    <span
+                      className={`urgency urgency-${request.urgency.toLowerCase()}`}
+                    >
+                      {request.urgency}
+                    </span>
+                    <span
+                      className={`badge badge-${request.status
+                        .toLowerCase()
+                        .replace(" ", "-")}`}
+                    >
+                      {request.status}
+                    </span>
+                  </div>
+                  <div className="request-meta">
+                    <span className="units">
+                      <strong>{request.units_required}</strong> units needed
+                    </span>
+                    <span className="date">
+                      {new Date(request.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="request-details">
-                <p>
-                  <strong>Patient:</strong> {request.patient_name}
-                </p>
-                <p>
-                  <strong>Created:</strong>{" "}
-                  {new Date(request.created_at).toLocaleString()}
-                </p>
-              </div>
-
-              <div className="request-actions">
-                {profile?.user_type === "Donor" &&
-                  request.status === "Open" && (
-                    <div className="donor-actions">
-                      <button
-                        className="btn btn-success"
-                        onClick={() =>
-                          handleRespond(request.request_id, "accept")
-                        }
-                      >
-                        Accept
-                      </button>
-                      <button
-                        className="btn btn-danger"
-                        onClick={() =>
-                          handleRespond(request.request_id, "decline")
-                        }
-                      >
-                        Decline
-                      </button>
+              <div className="card-body">
+                <div className="request-details">
+                  <div className="detail-item">
+                    <span className="detail-label">Patient:</span>
+                    <span className="detail-value">{request.patient_name}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Hospital:</span>
+                    <span className="detail-value">
+                      {request.hospital_name}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Created:</span>
+                    <span className="detail-value">
+                      {new Date(request.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  {request.notes && (
+                    <div className="detail-item full-width">
+                      <span className="detail-label">Notes:</span>
+                      <span className="detail-value">{request.notes}</span>
                     </div>
                   )}
+                </div>
+              </div>
 
-                {profile?.user_type === "Patient" &&
-                  request.patient_id === profile.user_id && (
-                    <div className="patient-actions">
-                      {request.status === "Open" && (
-                        <button
-                          className="btn btn-warning"
-                          onClick={() =>
-                            handleStatusUpdate(request.request_id, "Cancelled")
-                          }
-                        >
-                          Cancel Request
-                        </button>
-                      )}
-                      {request.status === "In Progress" && (
+              <div className="card-footer">
+                <div className="request-actions">
+                  {profile?.user_type === "Donor" &&
+                    request.status === "Open" && (
+                      <div className="donor-actions">
                         <button
                           className="btn btn-success"
                           onClick={() =>
-                            handleStatusUpdate(request.request_id, "Fulfilled")
+                            handleRespond(request.request_id, "accept")
                           }
                         >
-                          Mark as Fulfilled
+                          <span>✅</span>
+                          Accept Request
                         </button>
-                      )}
-                    </div>
-                  )}
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() =>
+                            handleRespond(request.request_id, "decline")
+                          }
+                        >
+                          <span>❌</span>
+                          Decline
+                        </button>
+                      </div>
+                    )}
+
+                  {profile?.user_type === "Patient" &&
+                    request.patient_id === profile.user_id && (
+                      <div className="patient-actions">
+                        {request.status === "Open" && (
+                          <button
+                            className="btn btn-warning"
+                            onClick={() =>
+                              handleStatusUpdate(
+                                request.request_id,
+                                "Cancelled"
+                              )
+                            }
+                          >
+                            <span>🚫</span>
+                            Cancel Request
+                          </button>
+                        )}
+                        {request.status === "In Progress" && (
+                          <button
+                            className="btn btn-success"
+                            onClick={() =>
+                              handleStatusUpdate(
+                                request.request_id,
+                                "Fulfilled"
+                              )
+                            }
+                          >
+                            <span>✅</span>
+                            Mark as Fulfilled
+                          </button>
+                        )}
+                      </div>
+                    )}
+                </div>
               </div>
             </div>
           ))
         ) : (
-          <div className="card">
-            <p>No requests found matching your criteria.</p>
-            {profile?.user_type === "Patient" && (
-              <Link to="/requests/create" className="btn btn-primary">
-                Create Your First Request
-              </Link>
-            )}
+          <div className="card empty-state-card">
+            <div className="card-body">
+              <div className="empty-state">
+                <div className="empty-icon">🩸</div>
+                <h3>No requests found</h3>
+                <p>No requests match your current filter criteria.</p>
+                {profile?.user_type === "Patient" && (
+                  <Link to="/app/requests/create" className="btn btn-primary">
+                    <span>➕</span>
+                    Create Your First Request
+                  </Link>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>

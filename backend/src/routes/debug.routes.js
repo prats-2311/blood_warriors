@@ -1,31 +1,100 @@
 const express = require("express");
+const { supabase, supabaseAuth } = require("../utils/supabase");
 const { authenticate } = require("../middleware/auth.middleware");
+
 const router = express.Router();
 
 /**
- * Debug endpoint to test authentication
+ * Test authentication without middleware
  */
-router.get("/auth-test", authenticate, (req, res) => {
+router.post("/test-auth", async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        status: "error",
+        message: "Token required",
+      });
+    }
+
+    // Test token validation
+    const {
+      data: { user },
+      error,
+    } = await supabaseAuth.auth.getUser(token);
+
+    if (error) {
+      return res.json({
+        status: "error",
+        message: "Token validation failed",
+        error: error.message,
+      });
+    }
+
+    if (!user) {
+      return res.json({
+        status: "error",
+        message: "No user found",
+      });
+    }
+
+    // Test database lookup
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("auth_id", user.id)
+      .single();
+
+    res.json({
+      status: "success",
+      auth_user: {
+        id: user.id,
+        email: user.email,
+      },
+      db_user: userData,
+      db_error: userError?.message,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * Test with middleware
+ */
+router.get("/test-middleware", authenticate, (req, res) => {
   res.json({
     status: "success",
-    message: "Authentication working",
-    user: {
-      user_id: req.user.user_id,
-      email: req.user.email,
-      user_type: req.user.user_type,
-    },
+    message: "Middleware working",
+    user: req.user,
   });
 });
 
 /**
- * Debug endpoint without authentication
+ * List all users for debugging
  */
-router.get("/ping", (req, res) => {
-  res.json({
-    status: "success",
-    message: "Server is running",
-    timestamp: new Date().toISOString(),
-  });
+router.get("/users", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("user_id, email, full_name, user_type, auth_id")
+      .limit(10);
+
+    res.json({
+      status: "success",
+      users: data,
+      error: error?.message,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+    });
+  }
 });
 
 module.exports = router;

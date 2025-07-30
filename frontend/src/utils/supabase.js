@@ -4,12 +4,8 @@ const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    "Missing Supabase environment variables. Please check your .env file."
-  );
+  throw new Error("Missing Supabase environment variables");
 }
-
-console.log("Initializing Supabase client with URL:", supabaseUrl);
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -17,69 +13,4 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
   },
-  db: {
-    schema: "public",
-  },
-  global: {
-    headers: {
-      "X-Client-Info": "blood-warriors-frontend",
-      Connection: "keep-alive",
-    },
-    fetch: (url, options = {}) => {
-      // Add timeout and retry logic to all requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      return fetch(url, {
-        ...options,
-        signal: controller.signal,
-        headers: {
-          // Preserve existing headers (including API key)
-          ...options.headers,
-          // Add connection optimization headers
-          Connection: "keep-alive",
-          "Keep-Alive": "timeout=30, max=100",
-        },
-      }).finally(() => {
-        clearTimeout(timeoutId);
-      });
-    },
-  },
 });
-
-// Retry wrapper for frontend operations
-export const withRetry = async (
-  operation,
-  maxRetries = 3,
-  baseDelay = 1000
-) => {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      const isNetworkError =
-        error.code === "ECONNRESET" ||
-        error.code === "ENOTFOUND" ||
-        error.code === "ETIMEDOUT" ||
-        error.message?.includes("fetch failed") ||
-        error.message?.includes("network error") ||
-        error.message?.includes("connection") ||
-        error.name === "FetchError" ||
-        error.message?.includes("NetworkError");
-
-      if (isNetworkError && attempt < maxRetries) {
-        const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
-        console.log(
-          `Network error on attempt ${attempt}/${maxRetries}. Retrying in ${delay}ms...`
-        );
-        console.log(`Error details:`, error.message);
-
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        continue;
-      }
-
-      // If it's not a network error or we've exhausted retries, throw the error
-      throw error;
-    }
-  }
-};

@@ -9,7 +9,6 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
-    Connection: "keep-alive",
   },
   timeout: 30000, // 30 second timeout
   // Add retry configuration

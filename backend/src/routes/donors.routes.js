@@ -1,35 +1,45 @@
-const express = require('express');
-const { 
-  updateLocation, 
-  toggleSosAvailability,
-  updateTasteKeywords,
-  getDonorCoupons,
-  recordDonation,
-  getNotifications
-} = require('../controllers/donors.controller');
-const { authenticate, isDonor } = require('../middleware/auth.middleware');
+const express = require("express");
+const { authenticate } = require("../middleware/auth.middleware");
+const { supabase } = require("../utils/supabase");
 
 const router = express.Router();
 
-// All routes require donor authentication
-router.use(authenticate, isDonor);
+/**
+ * Get all donors
+ */
+router.get("/", authenticate, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("donors")
+      .select(
+        `
+        *,
+        users!inner(full_name, phone_number, city, state),
+        bloodgroups!inner(group_name)
+      `
+      )
+      .eq("is_available_for_sos", true)
+      .order("donation_count", { ascending: false });
 
-// Update donor's location
-router.put('/me/location', updateLocation);
+    if (error) {
+      console.error("Error fetching donors:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to fetch donors",
+      });
+    }
 
-// Toggle SOS availability
-router.put('/me/sos-availability', toggleSosAvailability);
-
-// Update donor's interests (taste keywords)
-router.put('/me/interests', updateTasteKeywords);
-
-// Get donor's coupons
-router.get('/me/coupons', getDonorCoupons);
-
-// Record a donation
-router.post('/me/donations', recordDonation);
-
-// Get donor's notifications
-router.get('/me/notifications', getNotifications);
+    res.json({
+      status: "success",
+      data: data || [],
+    });
+  } catch (error) {
+    console.error("Donors fetch error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+    });
+  }
+});
 
 module.exports = router;

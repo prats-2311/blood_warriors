@@ -1,4 +1,4 @@
-const { supabase } = require("../utils/supabase");
+const { supabase, supabaseAuth } = require("../utils/supabase");
 
 /**
  * Middleware to authenticate requests using Supabase Auth
@@ -16,11 +16,11 @@ const authenticate = async (req, res, next) => {
 
     const token = authHeader.split(" ")[1];
 
-    // Verify the token with Supabase Auth
+    // Verify the token with Supabase Auth (using anon key client)
     const {
       data: { user },
       error,
-    } = await supabase.auth.getUser(token);
+    } = await supabaseAuth.auth.getUser(token);
 
     if (error || !user) {
       return res.status(401).json({
