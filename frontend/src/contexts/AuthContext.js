@@ -163,6 +163,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     profile,
+    userProfile: profile, // Alias for compatibility
     loading,
     login,
     register,

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../utils/supabase';
+import Button, { HeartIcon } from './ui/Button';
+import './SosRequestButton.css';
 
 const SosRequestButton = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -62,20 +64,64 @@ const SosRequestButton = () => {
   };
 
   return (
-    <div className="sos-button-container">
-      <button
-        className="sos-button"
-        onClick={handleSosRequest}
-        disabled={isLoading}
-      >
-        {isLoading ? 'Processing...' : 'Request Blood (SOS)'}
-      </button>
-      
-      {error && (
-        <div className="error-message">
-          {error}
+    <div className="sos-container">
+      <div className="sos-card">
+        <div className="sos-card__header">
+          <div className="sos-card__icon">
+            <HeartIcon />
+          </div>
+          <h3 className="sos-card__title">Emergency Blood Request</h3>
+          <p className="sos-card__subtitle">
+            Need blood urgently? Send an SOS to nearby donors instantly.
+          </p>
         </div>
-      )}
+        
+        <div className="sos-card__content">
+          <div className="sos-warning">
+            <div className="sos-warning__icon">⚠️</div>
+            <div className="sos-warning__text">
+              <strong>Emergency Use Only</strong>
+              <p>This will alert all nearby donors immediately. Use only for genuine emergencies.</p>
+            </div>
+          </div>
+          
+          <Button
+            variant="sos"
+            size="xl"
+            fullWidth
+            loading={isLoading}
+            onClick={handleSosRequest}
+            icon={<HeartIcon />}
+            className="sos-button"
+          >
+            {isLoading ? 'Sending SOS Alert...' : 'Send SOS Alert'}
+          </Button>
+          
+          {error && (
+            <div className="sos-error">
+              <div className="sos-error__icon">❌</div>
+              <div className="sos-error__message">{error}</div>
+            </div>
+          )}
+        </div>
+        
+        <div className="sos-card__footer">
+          <div className="sos-info">
+            <div className="sos-info__item">
+              <span className="sos-info__label">Response Time:</span>
+              <span className="sos-info__value">~5 minutes</span>
+            </div>
+            <div className="sos-info__item">
+              <span className="sos-info__label">Coverage:</span>
+              <span className="sos-info__value">15km radius</span>
+            </div>
+            <div className="sos-info__item">
+              <span className="sos-info__label">Available 24/7:</span>
+              <span className="sos-info__value">Yes</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

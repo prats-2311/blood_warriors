@@ -166,11 +166,18 @@ const login = async (req, res) => {
 
 const getProfile = async (req, res) => {
   try {
-    console.log("Getting profile for user:", req.user.email);
-    const userId = req.user.user_id;
-    const userType = req.user.user_type;
+    // Handle case where req.user might be an array
+    let user = req.user;
+    if (Array.isArray(user) && user.length > 0) {
+      user = user[0];
+    }
 
-    let profileData = { ...req.user };
+    console.log("Getting profile for user:", user.email);
+    console.log("User ID:", user.user_id);
+    const userId = user.user_id;
+    const userType = user.user_type;
+
+    let profileData = { ...user };
 
     // Add additional profile data based on user type
     try {

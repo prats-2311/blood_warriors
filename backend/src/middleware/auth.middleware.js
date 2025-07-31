@@ -89,12 +89,19 @@ const authenticate = async (req, res, next) => {
     try {
       const result = await supabase
         .from("users")
-        .select("*")
+        .select(
+          "user_id, auth_id, email, phone_number, full_name, city, state, user_type, created_at"
+        )
         .eq("auth_id", user.id)
         .single();
 
       userData = result.data;
       userError = result.error;
+
+      // Handle case where data comes back as array (shouldn't happen with .single() but let's be safe)
+      if (Array.isArray(userData) && userData.length > 0) {
+        userData = userData[0];
+      }
     } catch (dbError) {
       console.log("Database connection error:", dbError.message);
       userError = dbError;
@@ -118,7 +125,11 @@ const authenticate = async (req, res, next) => {
 
     // Attach the user to the request object
     req.user = userData;
-    console.log("Authentication successful for user:", userData.email);
+    console.log(
+      "Authentication successful for user:",
+      userData?.email || "unknown"
+    );
+    console.log("User ID:", userData?.user_id || "unknown");
 
     next();
   } catch (error) {

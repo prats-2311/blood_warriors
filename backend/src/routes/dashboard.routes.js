@@ -3,17 +3,40 @@ const { supabase } = require("../utils/supabase");
 
 const router = express.Router();
 
-// Retry utility function
-const retrySupabaseQuery = async (queryFn, maxRetries = 3, delay = 1000) => {
+// Test endpoint
+router.get("/test", (req, res) => {
+  res.json({
+    status: "success",
+    message: "Dashboard routes are working",
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Enhanced retry utility function with better error handling
+const retrySupabaseQuery = async (queryFn, maxRetries = 2, delay = 1000) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const result = await queryFn();
+      // Check if the result indicates a network error
+      if (
+        result.error &&
+        result.error.message &&
+        result.error.message.includes("fetch failed")
+      ) {
+        throw new Error(result.error.message);
+      }
       return result;
     } catch (error) {
-      console.log(`Attempt ${attempt} failed:`, error.message);
+      console.log(`Query attempt ${attempt} failed:`, error.message);
 
       if (attempt === maxRetries) {
-        throw error;
+        // Return a safe fallback result instead of throwing
+        return {
+          data: null,
+          error: {
+            message: `Failed after ${maxRetries} attempts: ${error.message}`,
+          },
+        };
       }
 
       // Exponential backoff
@@ -31,17 +54,47 @@ router.get("/patient-stats/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // Get patient's request statistics with retry
-    const { data: requests, error: requestsError } = await retrySupabaseQuery(
-      () =>
-        supabase
-          .from("donationrequests")
-          .select("status, urgency")
-          .eq("patient_id", userId)
-    );
+    // Validate userId
+    if (!userId || userId === "undefined") {
+      console.log("Invalid userId provided:", userId);
+      return res.json({
+        status: "success",
+        data: {
+          totalRequests: 0,
+          activeRequests: 0,
+          fulfilledRequests: 0,
+          cancelledRequests: 0,
+          urgentRequests: 0,
+          sosRequests: 0,
+        },
+        message: "Invalid user ID, showing default values",
+      });
+    }
+
+    console.log("Fetching patient stats for userId:", userId);
+
+    // Try to get patient's request statistics with enhanced error handling
+    let requests = [];
+    let requestsError = null;
+
+    try {
+      const result = await supabase
+        .from("donationrequests")
+        .select("status, urgency")
+        .eq("patient_id", userId);
+
+      requests = result.data || [];
+      requestsError = result.error;
+    } catch (networkError) {
+      console.log(
+        "Network error fetching patient requests:",
+        networkError.message
+      );
+      requestsError = networkError;
+    }
 
     if (requestsError) {
-      console.error("Error fetching patient requests:", requestsError);
+      console.error("Error fetching patient requests:", requestsError.message);
       // Return empty stats instead of error to prevent dashboard from breaking
       return res.json({
         status: "success",
@@ -87,6 +140,24 @@ router.get("/patient-stats/:userId", async (req, res) => {
 router.get("/donor-stats/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
+
+    // Validate userId
+    if (!userId || userId === "undefined") {
+      console.log("Invalid userId provided:", userId);
+      return res.json({
+        status: "success",
+        data: {
+          totalDonations: 0,
+          availableCoupons: 0,
+          redeemedCoupons: 0,
+          unreadNotifications: 0,
+          acceptedRequests: 0,
+        },
+        message: "Invalid user ID, showing default values",
+      });
+    }
+
+    console.log("Fetching donor stats for userId:", userId);
 
     // Get donor's donation statistics with retry
     const { data: donations, error: donationsError } = await retrySupabaseQuery(
@@ -233,7 +304,9 @@ router.get("/available-requests", async (req, res) => {
         *,
         bloodgroups(group_name),
         bloodcomponents(component_name),
-        patients(full_name)
+        patients!inner(
+          users!inner(full_name)
+        )
       `
       )
       .eq("status", "Open")
@@ -265,7 +338,7 @@ router.get("/available-requests", async (req, res) => {
       status: request.status,
       units_required: request.units_required,
       request_datetime: request.request_datetime,
-      patient_name: request.patients?.full_name || "Anonymous",
+      patient_name: request.patients?.users?.full_name || "Anonymous",
       hospital_name: request.hospital_name || "Unknown Hospital",
       notes: request.notes,
     }));
