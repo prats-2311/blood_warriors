@@ -1,8 +1,9 @@
 const express = require("express");
-const { supabase, supabaseAuth } = require("../utils/supabase");
-const { authenticate } = require("../middleware/auth.middleware");
+const { supabase } = require("../utils/supabase");
+const AuthMiddleware = require("../middleware/AuthMiddleware");
 
 const router = express.Router();
+const authMiddleware = new AuthMiddleware();
 
 /**
  * Test authentication without middleware
@@ -66,7 +67,7 @@ router.post("/test-auth", async (req, res) => {
 /**
  * Test with middleware
  */
-router.get("/test-middleware", authenticate, (req, res) => {
+router.get("/test-middleware", authMiddleware.authenticate, (req, res) => {
   res.json({
     status: "success",
     message: "Middleware working",

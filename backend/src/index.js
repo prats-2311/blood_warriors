@@ -28,7 +28,7 @@ app.use(
   cors({
     origin:
       process.env.NODE_ENV === "development"
-        ? ["http://localhost:3100"]
+        ? ["http://localhost:3000", "http://localhost:3100"]
         : process.env.FRONTEND_URL,
     credentials: true,
   })
@@ -41,6 +41,7 @@ app.get("/health", (req, res) => {
 });
 
 // API routes
+app.use("/api/health", require("./routes/health"));
 app.use("/api/debug", require("./routes/debug.routes"));
 app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/requests", require("./routes/requests.routes"));

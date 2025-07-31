@@ -1,13 +1,14 @@
 const express = require("express");
-const { authenticate } = require("../middleware/auth.middleware");
+const AuthMiddleware = require("../middleware/AuthMiddleware");
 const { supabase } = require("../utils/supabase");
 
 const router = express.Router();
+const authMiddleware = new AuthMiddleware();
 
 /**
  * Get all donors
  */
-router.get("/", authenticate, async (req, res) => {
+router.get("/", authMiddleware.authenticate, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("donors")

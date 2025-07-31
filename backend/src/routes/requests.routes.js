@@ -1,13 +1,14 @@
 const express = require("express");
-const { authenticate } = require("../middleware/auth.middleware");
+const AuthMiddleware = require("../middleware/AuthMiddleware");
 const { supabase } = require("../utils/supabase");
 
 const router = express.Router();
+const authMiddleware = new AuthMiddleware();
 
 /**
  * Get all donation requests
  */
-router.get("/", authenticate, async (req, res) => {
+router.get("/", authMiddleware.authenticate, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("donationrequests")
@@ -49,7 +50,7 @@ router.get("/", authenticate, async (req, res) => {
 /**
  * Create a new donation request
  */
-router.post("/", authenticate, async (req, res) => {
+router.post("/", authMiddleware.authenticate, async (req, res) => {
   try {
     const {
       blood_group_id,

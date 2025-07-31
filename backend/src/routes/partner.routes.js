@@ -3,7 +3,7 @@ const {
   createSosRequest, 
   registerDonor
 } = require('../controllers/partner.controller');
-const { authenticatePartner } = require('../middleware/auth.middleware');
+const { authenticatePartner } = require('../middleware/PartnerAuthMiddleware');
 
 const router = express.Router();
 
