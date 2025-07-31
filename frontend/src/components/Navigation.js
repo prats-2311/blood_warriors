@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStatus, useLogout } from '../hooks/useAuth';
 import Button, { HeartIcon, BellIcon, LocationIcon } from './ui/Button';
 import './Navigation.css';
 
@@ -8,7 +8,11 @@ const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
-  const { user, logout, userProfile } = useAuth();
+  const { isAuthenticated, user, userType } = useAuthStatus();
+
+  // Get profile from auth context - will need to be fetched separately
+  const userProfile = user; // For now, use user data directly
+  const { handleLogout, isLoading: logoutLoading } = useLogout();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -20,13 +24,8 @@ const Navigation = () => {
     setShowNotifications(!showNotifications);
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  const onLogout = async () => {
+    await handleLogout('/');
   };
 
   const isActive = (path) => {
@@ -248,9 +247,13 @@ const Navigation = () => {
                       <span>Help & Support</span>
                     </Link>
                     <hr className="user-dropdown__divider" />
-                    <button className="user-dropdown__item user-dropdown__item--danger" onClick={handleLogout}>
+                    <button
+                      className="user-dropdown__item user-dropdown__item--danger"
+                      onClick={onLogout}
+                      disabled={logoutLoading}
+                    >
                       <LogoutIcon />
-                      <span>Sign Out</span>
+                      <span>{logoutLoading ? 'Signing Out...' : 'Sign Out'}</span>
                     </button>
                   </div>
                 </div>

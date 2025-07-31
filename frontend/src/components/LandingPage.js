@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuthStatus } from '../hooks/useAuth';
 import Button, { HeartIcon, ShieldIcon, LocationIcon, BellIcon } from './ui/Button';
 import Card from './ui/Card';
 import './LandingPage.css';
 
 const LandingPage = () => {
-  const { user } = useAuth();
+  const { isAuthenticated, user } = useAuthStatus();
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     livesSaved: 1247,
@@ -16,10 +16,10 @@ const LandingPage = () => {
   });
 
   useEffect(() => {
-    if (user) {
+    if (isAuthenticated) {
       navigate('/app/dashboard');
     }
-  }, [user, navigate]);
+  }, [isAuthenticated, navigate]);
 
   // Animate stats on load
   useEffect(() => {

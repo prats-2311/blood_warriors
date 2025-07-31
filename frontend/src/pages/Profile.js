@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext";
+import { useProfile } from "../hooks/useAuth";
 import { profileService } from "../services/profileService";
 import { locationService } from "../services/locationService";
 import ProfileCompletion from "../components/ProfileCompletion";
 
 const Profile = () => {
-  const { profile, updateProfile } = useAuth();
+  const { profile, updateProfile } = useProfile();
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",

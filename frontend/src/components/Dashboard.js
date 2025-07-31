@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useProfile } from '../hooks/useAuth';
 import Card, { StatCard, RequestCard } from './ui/Card';
 import Button, { HeartIcon, LocationIcon, BellIcon, PlusIcon } from './ui/Button';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { user, userProfile } = useAuth();
+  const { user, profile: userProfile } = useProfile();
   const [stats, setStats] = useState({
     totalRequests: 0,
     activeRequests: 0,

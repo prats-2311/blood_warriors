@@ -100,23 +100,8 @@ class LoginController {
         });
       }
 
-      // Check if account is active
-      if (!userData.is_active) {
-        await this._logLoginAttempt(
-          userData.user_id,
-          email,
-          clientIP,
-          userAgent,
-          false,
-          "Account inactive"
-        );
-
-        return res.status(401).json({
-          status: "error",
-          message: "Account is not active. Please verify your email address.",
-          requires_verification: true,
-        });
-      }
+      // MVP: Skip account activation check for testing
+      // All accounts are considered active for MVP
 
       // Verify password
       const isPasswordValid = await this.passwordService.comparePassword(

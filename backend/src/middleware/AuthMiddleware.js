@@ -84,16 +84,8 @@ class AuthMiddleware {
         });
       }
 
-      // Check if user account is active
-      if (!userData.is_active) {
-        return res.status(401).json({
-          success: false,
-          error: {
-            code: "AUTH_ACCOUNT_INACTIVE",
-            message: "Account is inactive",
-          },
-        });
-      }
+      // MVP: Skip account activation check for testing
+      // All accounts are considered active for MVP
 
       // Attach user data to request
       req.user = userData;
@@ -317,7 +309,7 @@ class AuthMiddleware {
           .eq("user_id", decoded.sub)
           .single();
 
-        if (!userError && userData && userData.is_active) {
+        if (!userError && userData) {
           req.user = userData;
           req.tokenPayload = decoded;
         }

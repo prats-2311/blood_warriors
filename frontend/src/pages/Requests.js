@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useProfile } from "../hooks/useAuth";
 import { requestService } from "../services/requestService";
 
 const Requests = () => {
-  const { profile } = useAuth();
+  const { profile } = useProfile();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({
@@ -13,10 +13,6 @@ const Requests = () => {
     blood_group: "",
   });
   const [message, setMessage] = useState(null);
-
-  useEffect(() => {
-    fetchRequests();
-  }, [filter]);
 
   const fetchRequests = async () => {
     try {

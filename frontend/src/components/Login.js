@@ -1,45 +1,92 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useLogin, useGuestOnly } from "../hooks/useAuth";
 import Button, { HeartIcon, ShieldIcon } from "./ui/Button";
 import "./Login.css";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const location = useLocation();
+  const { isGuest, loading: authLoading } = useGuestOnly();
+  const { handleLogin, isLoading, error, clearError } = useLogin();
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    rememberMe: false,
   });
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+
+  // Clear error when form data changes
+  useEffect(() => {
+    if (error) {
+      clearError();
+    }
+    setValidationErrors({});
+  }, [formData.email, formData.password]);
+
+  // Show success message if redirected from registration
+  const successMessage = location.state?.message;
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.email) {
+      errors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = "Please enter a valid email address";
+    }
+
+    if (!formData.password) {
+      errors.password = "Password is required";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      setLoading(true);
-      setMessage(null);
+    if (!validateForm()) {
+      return;
+    }
 
-      await login(formData.email, formData.password);
-      navigate("/app/dashboard");
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: error.message || "Failed to login",
-      });
-    } finally {
-      setLoading(false);
+    const result = await handleLogin(
+      { email: formData.email, password: formData.password },
+      { rememberMe: formData.rememberMe }
+    );
+
+    if (result.success) {
+      // Navigation is handled by useLogin hook
+      console.log("Login successful");
     }
   };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  // Show loading spinner while checking authentication
+  if (authLoading) {
+    return (
+      <div className="auth-page">
+        <div className="auth-loading">
+          <div className="spinner"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-page">
@@ -88,12 +135,17 @@ const Login = () => {
             </p>
           </div>
 
-          {message && (
-            <div className={`auth-form__alert auth-form__alert--${message.type}`}>
-              <div className="alert-icon">
-                {message.type === 'error' ? '⚠️' : '✅'}
-              </div>
-              <span>{message.text}</span>
+          {successMessage && (
+            <div className="auth-form__alert auth-form__alert--success">
+              <div className="alert-icon">✅</div>
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="auth-form__alert auth-form__alert--error">
+              <div className="alert-icon">⚠️</div>
+              <span>{error}</span>
             </div>
           )}
 
@@ -107,7 +159,7 @@ const Login = () => {
                   type="email"
                   id="email"
                   name="email"
-                  className="form-field__input"
+                  className={`form-field__input ${validationErrors.email ? 'form-field__input--error' : ''}`}
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="Enter your email address"
@@ -119,6 +171,9 @@ const Login = () => {
                   </svg>
                 </div>
               </div>
+              {validationErrors.email && (
+                <div className="form-field__error">{validationErrors.email}</div>
+              )}
             </div>
 
             <div className="form-field">
@@ -127,21 +182,52 @@ const Login = () => {
               </label>
               <div className="form-field__input-wrapper">
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   id="password"
                   name="password"
-                  className="form-field__input"
+                  className={`form-field__input ${validationErrors.password ? 'form-field__input--error' : ''}`}
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter your password"
                   required
                 />
-                <div className="form-field__icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-                  </svg>
-                </div>
+                <button
+                  type="button"
+                  className="form-field__toggle-password"
+                  onClick={togglePasswordVisibility}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+                    </svg>
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                    </svg>
+                  )}
+                </button>
               </div>
+              {validationErrors.password && (
+                <div className="form-field__error">{validationErrors.password}</div>
+              )}
+            </div>
+
+            <div className="form-field form-field--checkbox">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="rememberMe"
+                  checked={formData.rememberMe}
+                  onChange={handleChange}
+                  className="checkbox-input"
+                />
+                <span className="checkbox-custom"></span>
+                <span className="checkbox-text">Remember me for 7 days</span>
+              </label>
+              <Link to="/forgot-password" className="forgot-password-link">
+                Forgot password?
+              </Link>
             </div>
 
             <div className="form-field">
@@ -150,10 +236,11 @@ const Login = () => {
                 variant="primary"
                 size="lg"
                 fullWidth
-                loading={loading}
+                loading={isLoading}
+                disabled={isLoading}
                 icon={<ShieldIcon />}
               >
-                {loading ? "Signing In..." : "Sign In"}
+                {isLoading ? "Signing In..." : "Sign In"}
               </Button>
             </div>
           </form>

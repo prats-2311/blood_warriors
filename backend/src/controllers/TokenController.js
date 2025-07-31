@@ -90,10 +90,10 @@ class TokenController {
         .eq("user_id", decoded.sub)
         .single();
 
-      if (userError || !userData || !userData.is_active) {
+      if (userError || !userData) {
         return res.status(401).json({
           status: "error",
-          message: "User account is not active",
+          message: "User account not found",
         });
       }
 

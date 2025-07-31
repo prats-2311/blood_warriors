@@ -16,8 +16,8 @@ class RegistrationController {
         "string.email": "Please provide a valid email address",
         "any.required": "Email is required",
       }),
-      password: Joi.string().min(8).required().messages({
-        "string.min": "Password must be at least 8 characters long",
+      password: Joi.string().min(6).required().messages({
+        "string.min": "Password must be at least 6 characters long",
         "any.required": "Password is required",
       }),
       phone_number: Joi.string()
@@ -98,29 +98,58 @@ class RegistrationController {
       }
 
       // Check if user already exists
-      const { data: existingUser } = await supabase
+      console.log(`Checking if user exists for email: ${email.toLowerCase()}`);
+      const { data: existingUser, error: userCheckError } = await supabase
         .from("users")
         .select("email")
-        .eq("email", email.toLowerCase())
-        .single();
+        .eq("email", email.toLowerCase());
 
-      if (existingUser) {
+      console.log('User check result:', { existingUser, userCheckError });
+
+      // If there's a database error, throw it
+      if (userCheckError) {
+        console.log(`Database error during user check: ${userCheckError.message}`);
+        throw new Error(`Database error: ${userCheckError.message}`);
+      }
+
+      // If user exists (array has items), return conflict
+      if (existingUser && existingUser.length > 0) {
+        console.log('User already exists, returning conflict');
         return res.status(409).json({
           status: "error",
           message: "An account with this email already exists",
         });
       }
 
-      // Hash password
+      console.log('User does not exist, proceeding with registration');
+
+      // Create Supabase Auth user first
+      console.log('Creating Supabase Auth user...');
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: email.toLowerCase(),
+        password,
+        email_confirm: true, // MVP: Skip email verification for testing
+      });
+
+      if (authError) {
+        console.error("Supabase Auth user creation error:", authError);
+        return res.status(500).json({
+          status: "error",
+          message: "Failed to create authentication account",
+        });
+      }
+
+      console.log('Supabase Auth user created:', authData.user.id);
+
+      // Hash password for our custom users table
       const hashedPassword = await this.passwordService.hashPassword(password);
 
-      // Generate email verification token
-      const verificationToken = this.passwordService.generateResetToken();
-
-      // Start database transaction
-      const { data: userData, error: userError } = await supabase
+      // Create user record in our custom users table
+      console.log('Creating user record in custom users table...');
+      const { error: userError } = await supabase
         .from("users")
         .insert({
+          auth_id: authData.user.id,
           email: email.toLowerCase(),
           password_hash: hashedPassword,
           phone_number,
@@ -128,17 +157,51 @@ class RegistrationController {
           city,
           state,
           user_type,
-          is_active: false, // Account inactive until email verification
-          is_verified: false,
+          is_active: true, // MVP: Skip email verification for testing
+          is_verified: true, // MVP: Skip email verification for testing
           failed_login_attempts: 0,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+        });
+
+      console.log('User creation error:', userError);
 
       if (userError) {
         console.error("User creation error:", userError);
+        // Cleanup: Delete the auth user if user record creation failed
+        try {
+          await supabase.auth.admin.deleteUser(authData.user.id);
+          console.log('Cleaned up auth user after user creation failure');
+        } catch (cleanupError) {
+          console.error('Failed to cleanup auth user:', cleanupError);
+        }
+        return res.status(500).json({
+          status: "error",
+          message: "Failed to create user account",
+        });
+      }
+
+      // Query for the created user data
+      console.log('Querying for created user data...');
+      const { data: userDataArray, error: queryError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("auth_id", authData.user.id);
+
+      const userData = userDataArray && userDataArray.length > 0 ? userDataArray[0] : null;
+
+      console.log('User query result:', { userData, queryError });
+
+      if (queryError || !userData) {
+        console.error("Failed to query created user:", queryError);
+        // Cleanup: Delete the auth user and user record
+        try {
+          await supabase.auth.admin.deleteUser(authData.user.id);
+          await supabase.from("users").delete().eq("auth_id", authData.user.id);
+          console.log('Cleaned up auth user and user record after query failure');
+        } catch (cleanupError) {
+          console.error('Failed to cleanup after query failure:', cleanupError);
+        }
         return res.status(500).json({
           status: "error",
           message: "Failed to create user account",
@@ -148,6 +211,7 @@ class RegistrationController {
       try {
         // Create type-specific record
         if (user_type === "Patient") {
+          console.log('Creating patient record with patient_id:', userData.user_id);
           const { error: patientError } = await supabase
             .from("patients")
             .insert({
@@ -162,6 +226,7 @@ class RegistrationController {
             );
           }
         } else if (user_type === "Donor") {
+          console.log('Creating donor record with donor_id:', userData.user_id);
           const { error: donorError } = await supabase.from("donors").insert({
             donor_id: userData.user_id,
             blood_group_id,
@@ -175,40 +240,13 @@ class RegistrationController {
           }
         }
 
-        // Store email verification token
-        const { error: verificationError } = await supabase
-          .from("email_verifications")
-          .insert({
-            user_id: userData.user_id,
-            token_hash: verificationToken.tokenHash,
-            expires_at: verificationToken.expiresAt,
-            created_at: new Date().toISOString(),
-          });
-
-        if (verificationError) {
-          throw new Error(
-            `Failed to create verification token: ${verificationError.message}`
-          );
-        }
-
-        // Send verification email (skip for MVP with dummy emails)
-        try {
-          if (this.emailService.validateEmailFormat(email)) {
-            await this.emailService.sendVerificationEmail(
-              userData,
-              verificationToken.token
-            );
-          }
-        } catch (emailError) {
-          console.warn("Email sending failed:", emailError.message);
-          // Don't fail registration if email fails
-        }
+        // MVP: Skip email verification for testing
+        console.log(`[MVP] User registered successfully: ${email}`);
 
         // Return success response
         res.status(201).json({
           status: "success",
-          message:
-            "Registration successful. Please check your email to verify your account.",
+          message: "Registration successful! You can now log in.",
           data: {
             user_id: userData.user_id,
             email: userData.email,
@@ -444,17 +482,21 @@ class RegistrationController {
       }
 
       // Check if email exists
-      const { data: existingUser } = await supabase
+      const { data: existingUser, error: userCheckError } = await supabase
         .from("users")
         .select("email")
-        .eq("email", email.toLowerCase())
-        .single();
+        .eq("email", email.toLowerCase());
+
+      // If there's a database error, throw it
+      if (userCheckError) {
+        throw new Error(`Database error: ${userCheckError.message}`);
+      }
 
       res.status(200).json({
         status: "success",
         data: {
           email,
-          available: !existingUser,
+          available: !existingUser || existingUser.length === 0,
         },
       });
     } catch (error) {

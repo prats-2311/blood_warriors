@@ -1,10 +1,10 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuthStatus } from "../hooks/useAuth";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthStatus();
 
   useEffect(() => {
     // Handle authentication callback

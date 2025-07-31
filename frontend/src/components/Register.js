@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../utils/supabase";
+import { useRegister, useGuestOnly } from "../hooks/useAuth";
+import { publicDataService } from "../services/publicDataService";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -17,9 +17,8 @@ const Register = () => {
     date_of_birth: "",
   });
   const [bloodGroups, setBloodGroups] = useState([]);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { isGuest, loading: authLoading } = useGuestOnly();
+  const { handleRegister, isLoading, error, clearError } = useRegister();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,16 +27,10 @@ const Register = () => {
 
   const fetchBloodGroups = async () => {
     try {
-      const { data, error } = await supabase
-        .from("bloodgroups")
-        .select("*")
-        .order("blood_group_id");
-
-      if (error) throw error;
-      setBloodGroups(data || []);
+      const response = await publicDataService.getBloodGroups();
+      setBloodGroups(response.data || []);
     } catch (error) {
       console.error("Error fetching blood groups:", error);
-      setError("Failed to load blood groups. Please refresh the page.");
       // Fallback blood groups if API fails
       setBloodGroups([
         { blood_group_id: 1, group_name: "A+" },
@@ -62,50 +55,35 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Clear any previous errors
+    clearError();
+
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      // This will be handled by the useRegister hook's validation
       return;
     }
 
     if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
+      // This will be handled by the useRegister hook's validation
       return;
     }
 
-    try {
-      setError(null);
-      setLoading(true);
+    const registrationData = { ...formData };
+    delete registrationData.confirmPassword;
 
-      const registrationData = { ...formData };
-      delete registrationData.confirmPassword;
-
-      const result = await register(registrationData);
-
-      // Check if email confirmation is required
-      if (result?.needsConfirmation) {
-        setError(null);
-        alert(
-          "Registration successful! Please check your email to confirm your account, then you can login."
-        );
-        navigate("/login");
-      } else if (result?.needsLogin) {
-        setError(null);
-        alert("Registration successful! Please login with your credentials.");
-        navigate("/login");
-      } else {
-        // Registration successful and logged in
-        setError(null);
-        // Small delay to ensure auth state is updated
-        setTimeout(() => {
-          navigate("/app/dashboard");
-        }, 500);
-      }
-    } catch (error) {
-      setError(error.message || "Failed to register");
-      console.error("Registration error:", error);
-    } finally {
-      setLoading(false);
+    // Convert blood_group_id to number
+    if (registrationData.blood_group_id) {
+      registrationData.blood_group_id = parseInt(registrationData.blood_group_id, 10);
     }
+
+    // Remove date_of_birth if user is not a patient
+    if (registrationData.user_type !== "Patient") {
+      delete registrationData.date_of_birth;
+    }
+
+    await handleRegister(registrationData, {
+      redirectTo: "/login"
+    });
   };
 
   return (
@@ -258,8 +236,8 @@ const Register = () => {
             </div>
           )}
 
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? "Creating Account..." : "Create Account"}
+          <button type="submit" className="btn btn-primary" disabled={isLoading}>
+            {isLoading ? "Creating Account..." : "Create Account"}
           </button>
         </form>
 
