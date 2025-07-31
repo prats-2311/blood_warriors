@@ -58,7 +58,14 @@ class LoginController {
         .eq("email", email.toLowerCase())
         .single();
 
-      if (userError || !userData) {
+      // Fix: Handle case where userData is an array instead of single object
+      // This happens because Supabase sometimes returns arrays even with .single()
+      let user = userData;
+      if (Array.isArray(userData) && userData.length > 0) {
+        user = userData[0];
+      }
+
+      if (userError || !user) {
         // Log failed login attempt
         await this._logLoginAttempt(
           null,
@@ -77,15 +84,15 @@ class LoginController {
 
       // Check if account is locked
       if (
-        userData.locked_until &&
-        new Date(userData.locked_until) > new Date()
+        user.locked_until &&
+        new Date(user.locked_until) > new Date()
       ) {
         const lockoutRemaining = Math.ceil(
-          (new Date(userData.locked_until) - new Date()) / 1000 / 60
+          (new Date(user.locked_until) - new Date()) / 1000 / 60
         );
 
         await this._logLoginAttempt(
-          userData.user_id,
+          user.user_id,
           email,
           clientIP,
           userAgent,
@@ -96,22 +103,24 @@ class LoginController {
         return res.status(423).json({
           status: "error",
           message: `Account is temporarily locked. Try again in ${lockoutRemaining} minutes.`,
-          locked_until: userData.locked_until,
+          locked_until: user.locked_until,
         });
       }
 
       // MVP: Skip account activation check for testing
       // All accounts are considered active for MVP
 
+
+
       // Verify password
       const isPasswordValid = await this.passwordService.comparePassword(
         password,
-        userData.password_hash
+        user.password_hash
       );
 
       if (!isPasswordValid) {
         // Increment failed login attempts
-        const newFailedAttempts = (userData.failed_login_attempts || 0) + 1;
+        const newFailedAttempts = (user.failed_login_attempts || 0) + 1;
         let updateData = {
           failed_login_attempts: newFailedAttempts,
           updated_at: new Date().toISOString(),
@@ -127,10 +136,10 @@ class LoginController {
         await supabase
           .from("users")
           .update(updateData)
-          .eq("user_id", userData.user_id);
+          .eq("user_id", user.user_id);
 
         await this._logLoginAttempt(
-          userData.user_id,
+          user.user_id,
           email,
           clientIP,
           userAgent,
@@ -142,7 +151,7 @@ class LoginController {
           // Send security alert email
           try {
             await this.emailService.sendSecurityAlert(
-              userData,
+              user,
               "account-locked",
               {
                 ip: clientIP,
@@ -181,24 +190,28 @@ class LoginController {
           last_login_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
-        .eq("user_id", userData.user_id);
+        .eq("user_id", user.user_id);
 
       // Generate JWT tokens
       const tokenPayload = {
-        userId: userData.user_id,
-        email: userData.email,
-        userType: userData.user_type,
-        isVerified: userData.is_verified,
+        userId: user.user_id,
+        email: user.email,
+        userType: user.user_type,
+        isVerified: user.is_verified,
       };
 
       const tokens = this.jwtService.generateTokenPair(tokenPayload);
 
       // Store refresh token in database
+      const crypto = require("crypto");
+      const tokenHash = crypto.createHash("sha256").update(tokens.refreshToken).digest("hex");
+
       const { error: refreshTokenError } = await supabase
         .from("refresh_tokens")
         .insert({
-          user_id: userData.user_id,
+          user_id: user.user_id,
           token_id: tokens.refreshTokenId,
+          token_hash: tokenHash,
           expires_at: tokens.refreshTokenExpiresAt,
           created_at: new Date().toISOString(),
           ip_address: clientIP,
@@ -214,11 +227,11 @@ class LoginController {
       }
 
       // Get complete user profile
-      const userProfile = await this._getUserProfile(userData);
+      const userProfile = await this._getUserProfile(user);
 
       // Log successful login
       await this._logLoginAttempt(
-        userData.user_id,
+        user.user_id,
         email,
         clientIP,
         userAgent,
@@ -228,7 +241,7 @@ class LoginController {
 
       // Send login notification email (if enabled)
       try {
-        await this.emailService.sendLoginNotification(userData, {
+        await this.emailService.sendLoginNotification(user, {
           ip: clientIP,
           userAgent,
           timestamp: new Date().toLocaleString(),
