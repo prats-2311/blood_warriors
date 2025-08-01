@@ -3,6 +3,7 @@ import { useProfile } from "../hooks/useAuth";
 import { profileService } from "../services/profileService";
 import { locationService } from "../services/locationService";
 import ProfileCompletion from "../components/ProfileCompletion";
+import "./Profile.css";
 
 const Profile = () => {
   const { profile, updateProfile } = useProfile();

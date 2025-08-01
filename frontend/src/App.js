@@ -26,6 +26,7 @@ import Coupons from "./pages/Coupons";
 import AuthCallback from "./pages/AuthCallback";
 import LandingPage from "./components/LandingPage";
 import "./styles/globals.css";
+import "./styles/responsive-fixes.css";
 import "./App.css";
 
 // Modern Layout Component

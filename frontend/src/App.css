@@ -6,17 +6,26 @@
 .App {
   min-height: 100vh;
   background: var(--color-bg-primary);
+  width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .app-layout {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .app-main {
   flex: 1;
   padding-top: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* Loading States */

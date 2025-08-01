@@ -9,6 +9,8 @@
   border-radius: var(--radius-xl);
   transition: all var(--transition-normal);
   overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Card Variants */

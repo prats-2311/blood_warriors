@@ -468,6 +468,8 @@ th {
 .overflow-hidden { overflow: hidden; }
 .overflow-auto { overflow: auto; }
 .overflow-scroll { overflow: scroll; }
+.overflow-x-hidden { overflow-x: hidden; }
+.overflow-y-auto { overflow-y: auto; }
 
 /* Width & Height Utilities */
 .w-full { width: 100%; }
@@ -513,6 +515,69 @@ th {
   h2 {
     font-size: var(--text-xl);
   }
+}
+
+/* Global Layout Fixes */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+}
+
+body {
+  position: relative;
+}
+
+/* Prevent horizontal scroll on all elements */
+* {
+  max-width: 100%;
+}
+
+/* Container improvements */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-4);
+  box-sizing: border-box;
+}
+
+/* Responsive container */
+@media (max-width: 1240px) {
+  .container {
+    max-width: calc(100% - 2rem);
+  }
+}
+
+/* Form improvements */
+input, select, textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+/* Button improvements */
+button {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+/* Image improvements */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Grid improvements */
+.grid {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Flex improvements */
+.flex {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* High Contrast Mode */

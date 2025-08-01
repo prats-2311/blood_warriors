@@ -18,6 +18,8 @@
   overflow: hidden;
   outline: none;
   box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 .btn:focus-visible {
