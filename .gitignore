@@ -72,7 +72,7 @@ dist
 
 # Gatsby files
 .cache/
-public
+# public - REMOVED: This was preventing React public folder from being committed
 
 # Storybook build outputs
 .out
