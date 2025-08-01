@@ -48,6 +48,10 @@ app.use("/api/requests", require("./routes/requests.routes"));
 app.use("/api/donors", require("./routes/donors.routes"));
 app.use("/api/public-data", require("./routes/public-data.routes"));
 app.use("/api/dashboard", require("./routes/dashboard.routes"));
+app.use("/api/ai", require("./routes/ai.routes"));
+app.use("/api/partner", require("./routes/partner.routes"));
+app.use("/api/notifications", require("./routes/notifications.routes"));
+app.use("/api/coupons", require("./routes/coupons.routes"));
 
 // 404 handler
 app.use((req, res) => {

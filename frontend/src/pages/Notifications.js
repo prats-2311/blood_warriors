@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { donorService } from "../services/donorService";
+import { useProfile } from "../hooks/useAuth";
 
 const Notifications = () => {
+  const { profile } = useProfile();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
@@ -11,12 +13,15 @@ const Notifications = () => {
   }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchNotifications = async () => {
+    if (!profile?.user_id) return;
+
     try {
       setLoading(true);
-      const data = await donorService.getNotifications(filter || null);
-      setNotifications(data.data);
+      const data = await donorService.getNotifications(profile.user_id, filter || null);
+      setNotifications(data.data || []);
     } catch (error) {
       console.error("Error fetching notifications:", error);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }

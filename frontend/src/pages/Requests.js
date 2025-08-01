@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useProfile } from "../hooks/useAuth";
+import { requestService } from "../services/requestService";
+import { publicDataService } from "../services/publicDataService";
 
 
 const Requests = () => {
@@ -13,11 +15,29 @@ const Requests = () => {
     blood_group: "",
   });
   const [message, setMessage] = useState(null);
+  // Load requests on component mount
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      // Mock data for now - replace with actual API call
+      setMessage(null);
+
+      // Fetch requests from API
+      const response = await requestService.getAllRequests();
+
+      if (response.status === "success") {
+        setRequests(response.data || []);
+      } else {
+        setMessage({ type: "error", text: "Failed to load requests" });
+      }
+    } catch (error) {
+      console.error("Error fetching requests:", error);
+      setMessage({ type: "error", text: "Failed to load requests" });
+
+      // Fallback to mock data if API fails
       const mockRequests = [
         {
           request_id: "1",
@@ -46,56 +66,29 @@ const Requests = () => {
           hospital_name: "General Hospital",
           notes: "Cancer treatment support",
         },
-        {
-          request_id: "3",
-          blood_group: "B+",
-          component: "Plasma",
-          urgency: "Scheduled",
-          status: "In Progress",
-          units_required: 3,
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-          patient_name: "Mike Johnson",
-          patient_id: "other",
-          hospital_name: "Medical Center",
-          notes: "Regular transfusion",
-        },
       ];
-
-      // Apply filters
-      let filteredRequests = mockRequests;
-      if (filter.status) {
-        filteredRequests = filteredRequests.filter(
-          (req) => req.status === filter.status
-        );
-      }
-      if (filter.urgency) {
-        filteredRequests = filteredRequests.filter(
-          (req) => req.urgency === filter.urgency
-        );
-      }
-      if (filter.blood_group) {
-        filteredRequests = filteredRequests.filter(
-          (req) => req.blood_group === filter.blood_group
-        );
-      }
-
-      setRequests(filteredRequests);
-    } catch (error) {
-      setMessage({ type: "error", text: "Failed to fetch requests" });
+      setRequests(mockRequests);
     } finally {
       setLoading(false);
     }
   };
 
+
+
   const handleRespond = async (requestId, response) => {
     try {
-      // Mock API call
+      // Call API to respond to request
+      await requestService.respondToRequest(requestId, { response });
+
       setMessage({
         type: "success",
         text: `Successfully ${
           response === "accept" ? "accepted" : "declined"
         } the request`,
       });
+
+      // Refresh requests
+      fetchRequests();
       fetchRequests();
     } catch (error) {
       setMessage({ type: "error", text: "Failed to respond to request" });

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { requestService } from "../services/requestService";
+import { publicDataService } from "../services/publicDataService";
 
 
 const CreateRequest = () => {
@@ -27,7 +29,18 @@ const CreateRequest = () => {
 
   const fetchFormData = async () => {
     try {
-      // Mock data for now - replace with actual API calls
+      // Fetch blood groups from API
+      const bloodGroupsResponse = await publicDataService.getBloodGroups();
+      setBloodGroups(bloodGroupsResponse.data || []);
+
+      // Fetch blood components from API
+      const bloodComponentsResponse = await publicDataService.getBloodComponents();
+      setBloodComponents(bloodComponentsResponse.data || []);
+    } catch (error) {
+      console.error("Error fetching form data:", error);
+      setMessage({ type: "error", text: "Failed to load form data" });
+
+      // Fallback to mock data if API fails
       setBloodGroups([
         { blood_group_id: 1, group_name: "A+" },
         { blood_group_id: 2, group_name: "A-" },
@@ -46,8 +59,6 @@ const CreateRequest = () => {
         { component_id: 4, component_name: "Plasma" },
         { component_id: 5, component_name: "Cryoprecipitate" },
       ]);
-    } catch (error) {
-      setMessage({ type: "error", text: "Failed to load form data" });
     }
   };
 
@@ -97,17 +108,38 @@ const CreateRequest = () => {
       setLoading(true);
       setMessage(null);
 
+      // Validate required fields
+      if (!formData.blood_group_id || !formData.component_id || !formData.units_required || !formData.urgency) {
+        setMessage({
+          type: "error",
+          text: "Please fill in all required fields",
+        });
+        return;
+      }
+
+      // Validate units required
+      const unitsRequired = parseInt(formData.units_required);
+      if (isNaN(unitsRequired) || unitsRequired < 1 || unitsRequired > 10) {
+        setMessage({
+          type: "error",
+          text: "Units required must be between 1 and 10",
+        });
+        return;
+      }
+
       const requestData = {
         ...formData,
         blood_group_id: parseInt(formData.blood_group_id),
         component_id: parseInt(formData.component_id),
-        units_required: parseInt(formData.units_required),
+        units_required: unitsRequired,
         latitude: formData.latitude ? parseFloat(formData.latitude) : null,
         longitude: formData.longitude ? parseFloat(formData.longitude) : null,
       };
 
-      // Mock API call
-      console.log("Creating request:", requestData);
+      // Create request using API
+      const response = await requestService.createRequest(requestData);
+
+      console.log("Request created:", response);
 
       setMessage({
         type: "success",

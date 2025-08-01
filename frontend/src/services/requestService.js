@@ -22,6 +22,24 @@ export const requestService = {
     }
   },
 
+  // Get all requests (simplified version for the Requests page)
+  getAllRequests: async (filters = {}) => {
+    try {
+      const params = new URLSearchParams();
+
+      // Add basic filters
+      if (filters.status) params.append("status", filters.status);
+      if (filters.urgency) params.append("urgency", filters.urgency);
+      if (filters.blood_group) params.append("blood_group", filters.blood_group);
+
+      const response = await api.get(`/requests?${params}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching all requests:", error);
+      throw error;
+    }
+  },
+
   // Get requests with advanced filtering and joins
   getRequests: async (filters = {}) => {
     try {

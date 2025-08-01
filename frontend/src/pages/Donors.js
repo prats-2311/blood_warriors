@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { publicDataService } from "../services/publicDataService";
+import { donorService } from "../services/donorService";
 
 const Donors = () => {
   const [bloodGroups, setBloodGroups] = useState([]);
+  const [donors, setDonors] = useState([]);
   const [searchParams, setSearchParams] = useState({
     blood_group: "",
     city: "",
     radius: "10",
   });
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState(null);
 
   useEffect(() => {
     fetchBloodGroups();
@@ -26,13 +29,27 @@ const Donors = () => {
   const handleSearch = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setMessage(null);
 
-    // In a real implementation, you would call an API to find donors
-    // For now, we'll just show a message
-    setTimeout(() => {
+    try {
+      // Call API to search for donors
+      const response = await donorService.searchDonors(searchParams);
+
+      if (response.status === "success") {
+        setDonors(response.data || []);
+        setMessage({
+          type: "success",
+          text: `Found ${response.data?.length || 0} donors`,
+        });
+      } else {
+        setMessage({ type: "error", text: "Failed to search donors" });
+      }
+    } catch (error) {
+      console.error("Error searching donors:", error);
+      setMessage({ type: "error", text: "Failed to search donors" });
+    } finally {
       setLoading(false);
-      alert("Donor search functionality would be implemented here");
-    }, 1000);
+    }
   };
 
   return (
@@ -108,6 +125,33 @@ const Donors = () => {
           </button>
         </form>
       </div>
+
+      {/* Search Results */}
+      {message && (
+        <div className={`alert alert-${message.type}`}>
+          {message.text}
+        </div>
+      )}
+
+      {donors.length > 0 && (
+        <div className="card">
+          <h3>Search Results</h3>
+          <div className="donors-list">
+            {donors.map((donor) => (
+              <div key={donor.donor_id} className="donor-card">
+                <div className="donor-info">
+                  <h4>{donor.users?.full_name || 'Anonymous Donor'}</h4>
+                  <p className="blood-type">{donor.bloodgroups?.group_name}</p>
+                  <p className="location">{donor.users?.city}, {donor.users?.state}</p>
+                  {donor.is_available_for_sos && (
+                    <span className="sos-badge">SOS Available</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <h3>Blood Compatibility Guide</h3>

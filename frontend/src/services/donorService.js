@@ -1,6 +1,26 @@
 import api from "./api";
 
 export const donorService = {
+  // Search for donors with filters
+  searchDonors: async (searchParams = {}) => {
+    try {
+      const params = new URLSearchParams();
+
+      if (searchParams.blood_group) params.append("blood_group", searchParams.blood_group);
+      if (searchParams.city) params.append("city", searchParams.city);
+      if (searchParams.radius) params.append("radius", searchParams.radius);
+      if (searchParams.is_available_for_sos !== undefined) {
+        params.append("is_available_for_sos", searchParams.is_available_for_sos);
+      }
+
+      const response = await api.get(`/donors?${params}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error searching donors:", error);
+      throw error;
+    }
+  },
+
   // Get donor notifications with proper joins
   getNotifications: async (donorId, status = null) => {
     try {

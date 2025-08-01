@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { donorService } from "../services/donorService";
+import { useProfile } from "../hooks/useAuth";
 
 const Coupons = () => {
+  const { profile } = useProfile();
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
@@ -11,12 +13,15 @@ const Coupons = () => {
   }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchCoupons = async () => {
+    if (!profile?.user_id) return;
+
     try {
       setLoading(true);
-      const data = await donorService.getCoupons(filter || null);
-      setCoupons(data.data);
+      const data = await donorService.getCoupons(profile.user_id, filter || null);
+      setCoupons(data.data || []);
     } catch (error) {
       console.error("Error fetching coupons:", error);
+      setCoupons([]);
     } finally {
       setLoading(false);
     }
