@@ -47,6 +47,83 @@ export const AuthProvider = ({ children }) => {
 
   const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:4000/api";
 
+
+
+
+  const clearAuthState = () => {
+    setUser(null);
+    setProfile(null);
+    setAccessToken(null);
+    setRefreshToken(null);
+    removeStoredTokens();
+  };
+
+  const fetchProfile = useCallback(async (token) => {
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${apiUrl}/auth/profile`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data.data);
+      } else if (response.status === 401) {
+        // Token is invalid, clear auth state
+        clearAuthState();
+      }
+    } catch (error) {
+      console.error("Profile fetch error:", error);
+    }
+  }, [apiUrl]);
+
+  const refreshAccessToken = useCallback(async (refreshTokenValue) => {
+    try {
+      const response = await fetch(`${apiUrl}/auth/token/refresh`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          refresh_token: refreshTokenValue,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const { access_token, refresh_token } = data.data;
+
+        setAccessToken(access_token);
+        setRefreshToken(refresh_token);
+        setStoredToken(access_token);
+        setStoredRefreshToken(refresh_token);
+
+        const payload = getTokenPayload(access_token);
+        if (payload) {
+          setUser({
+            id: payload.sub,
+            email: payload.email,
+            userType: payload.userType,
+            isVerified: payload.isVerified,
+          });
+        }
+
+        return true;
+      } else {
+        clearAuthState();
+        return false;
+      }
+    } catch (error) {
+      console.error("Token refresh error:", error);
+      clearAuthState();
+      return false;
+    }
+  }, [apiUrl]);
+
   const initializeAuth = useCallback(async () => {
     try {
       const storedToken = getStoredToken();
@@ -63,7 +140,7 @@ export const AuthProvider = ({ children }) => {
           // Token is still valid
           setAccessToken(storedToken);
           setRefreshToken(storedRefreshToken);
-          
+
           const payload = getTokenPayload(storedToken);
           if (payload) {
             setUser({
@@ -72,7 +149,7 @@ export const AuthProvider = ({ children }) => {
               userType: payload.userType,
               isVerified: payload.isVerified,
             });
-            
+
             // Fetch full profile
             await fetchProfile(storedToken);
           }
@@ -84,94 +161,12 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchProfile, refreshAccessToken]);
 
   // Initialize authentication state
   useEffect(() => {
     initializeAuth();
   }, [initializeAuth]);
-
-  const clearAuthState = () => {
-    setUser(null);
-    setProfile(null);
-    setAccessToken(null);
-    setRefreshToken(null);
-    removeStoredTokens();
-  };
-
-  const fetchProfile = async (token) => {
-    if (!token) return;
-
-    try {
-      const response = await fetch(`${apiUrl}/auth/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setProfile(data.data);
-      } else if (response.status === 401) {
-        // Token is invalid, try to refresh
-        const storedRefreshToken = getStoredRefreshToken();
-        if (storedRefreshToken) {
-          const refreshed = await refreshAccessToken(storedRefreshToken);
-          if (!refreshed) {
-            clearAuthState();
-          }
-        } else {
-          clearAuthState();
-        }
-      }
-    } catch (error) {
-      console.error("Profile fetch error:", error);
-    }
-  };
-
-  const refreshAccessToken = async (refreshTokenValue) => {
-    try {
-      const response = await fetch(`${apiUrl}/auth/token/refresh`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          refresh_token: refreshTokenValue,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const { access_token, refresh_token } = data.data;
-        
-        setAccessToken(access_token);
-        setRefreshToken(refresh_token);
-        setStoredToken(access_token);
-        setStoredRefreshToken(refresh_token);
-        
-        const payload = getTokenPayload(access_token);
-        if (payload) {
-          setUser({
-            id: payload.sub,
-            email: payload.email,
-            userType: payload.userType,
-            isVerified: payload.isVerified,
-          });
-        }
-        
-        return true;
-      } else {
-        clearAuthState();
-        return false;
-      }
-    } catch (error) {
-      console.error("Token refresh error:", error);
-      clearAuthState();
-      return false;
-    }
-  };
 
   const login = async (email, password, rememberMe = false) => {
     try {

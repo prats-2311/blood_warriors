@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useProfile } from '../hooks/useAuth';
 import Card, { StatCard, RequestCard } from './ui/Card';
-import Button, { HeartIcon, LocationIcon, BellIcon, PlusIcon } from './ui/Button';
+import Button, { HeartIcon, LocationIcon, PlusIcon } from './ui/Button';
 import './Dashboard.css';
 
 const Dashboard = () => {

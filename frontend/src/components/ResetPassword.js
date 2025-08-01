@@ -7,7 +7,7 @@ import "./Login.css"; // Reuse login styles
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { isGuest, loading: authLoading } = useGuestOnly();
+  const { loading: authLoading } = useGuestOnly();
   const { handleResetPassword, isLoading, error, success, clearMessages } = usePasswordManagement();
   
   const [formData, setFormData] = useState({
@@ -65,7 +65,7 @@ const ResetPassword = () => {
     if (/\d/.test(password)) strength.score += 1;
     else strength.feedback.push("One number");
     
-    if (/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(password)) strength.score += 1;
+    if (/[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password)) strength.score += 1;
     else strength.feedback.push("One special character");
     
     return strength;

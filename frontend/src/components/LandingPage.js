@@ -6,7 +6,7 @@ import Card from './ui/Card';
 import './LandingPage.css';
 
 const LandingPage = () => {
-  const { isAuthenticated, user } = useAuthStatus();
+  const { isAuthenticated } = useAuthStatus();
   const navigate = useNavigate();
   const [stats, setStats] = useState({
     livesSaved: 1247,

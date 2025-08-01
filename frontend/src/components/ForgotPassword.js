@@ -5,7 +5,7 @@ import Button, { HeartIcon, ShieldIcon } from "./ui/Button";
 import "./Login.css"; // Reuse login styles
 
 const ForgotPassword = () => {
-  const { isGuest, loading: authLoading } = useGuestOnly();
+  const { loading: authLoading } = useGuestOnly();
   const { handleForgotPassword, isLoading, error, success, clearMessages } = usePasswordManagement();
   
   const [email, setEmail] = useState("");
@@ -161,7 +161,7 @@ const ForgotPassword = () => {
               </Link>
             </p>
             <p className="auth-form__help">
-              Need help? <a href="#" className="auth-form__link">Contact Support</a>
+              Need help? <button type="button" className="auth-form__link" onClick={() => window.location.href = 'mailto:support@bloodwarriors.com'}>Contact Support</button>
             </p>
           </div>
         </div>

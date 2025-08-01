@@ -19,7 +19,7 @@ const Register = () => {
   });
   const [bloodGroups, setBloodGroups] = useState([]);
   const [validationErrors, setValidationErrors] = useState({});
-  const { isGuest, loading: authLoading } = useGuestOnly();
+  const { loading: authLoading } = useGuestOnly();
   const { handleRegister, isLoading, error, clearError } = useRegister();
   const navigate = useNavigate();
 
@@ -33,7 +33,7 @@ const Register = () => {
       clearError();
     }
     setValidationErrors({});
-  }, [formData.email, formData.password, formData.confirmPassword, formData.full_name, formData.phone_number]);
+  }, [formData.email, formData.password, formData.confirmPassword, formData.full_name, formData.phone_number, error, clearError]);
 
   const fetchBloodGroups = async () => {
     try {
@@ -75,7 +75,7 @@ const Register = () => {
     // Phone validation
     if (!formData.phone_number) {
       errors.phone_number = "Phone number is required";
-    } else if (!/^\+?[\d\s\-\(\)]{10,}$/.test(formData.phone_number)) {
+    } else if (!/^\+?[\d\s\-()]{10,}$/.test(formData.phone_number)) {
       errors.phone_number = "Please enter a valid phone number";
     }
 

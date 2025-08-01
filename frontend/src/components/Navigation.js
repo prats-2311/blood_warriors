@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuthStatus, useLogout } from '../hooks/useAuth';
-import Button, { HeartIcon, BellIcon, LocationIcon } from './ui/Button';
+import Button, { HeartIcon, BellIcon } from './ui/Button';
 import './Navigation.css';
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
-  const { isAuthenticated, user, userType } = useAuthStatus();
+  const { user } = useAuthStatus();
 
   // Get profile from auth context - will need to be fetched separately
   const userProfile = user; // For now, use user data directly
   const { handleLogout, isLoading: logoutLoading } = useLogout();
   const location = useLocation();
-  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);

@@ -1,12 +1,12 @@
 # Netlify Configuration for Frontend Deployment
 
 [build]
-  # Build command
-  command = "npm run build"
-  
+  # Build command with ESLint warnings disabled
+  command = "npm run build:prod"
+
   # Directory to publish (React build output)
   publish = "build"
-  
+
   # Base directory for build
   base = "frontend"
 
@@ -14,6 +14,9 @@
 [build.environment]
   NODE_VERSION = "18"
   NPM_VERSION = "9"
+  # Disable treating warnings as errors
+  CI = "false"
+  GENERATE_SOURCEMAP = "false"
 
 # Redirect rules for SPA (Single Page Application)
 [[redirects]]

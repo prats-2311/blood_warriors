@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useLogin, useGuestOnly } from "../hooks/useAuth";
 import Button, { HeartIcon, ShieldIcon } from "./ui/Button";
 import "./Login.css";
 
 const Login = () => {
-  const navigate = useNavigate();
   const location = useLocation();
-  const { isGuest, loading: authLoading } = useGuestOnly();
+  const { loading: authLoading } = useGuestOnly();
   const { handleLogin, isLoading, error, clearError } = useLogin();
 
   const [formData, setFormData] = useState({
@@ -24,7 +23,7 @@ const Login = () => {
       clearError();
     }
     setValidationErrors({});
-  }, [formData.email, formData.password]);
+  }, [formData.email, formData.password, error, clearError]);
 
   // Show success message if redirected from registration
   const successMessage = location.state?.message;
@@ -257,7 +256,7 @@ const Login = () => {
               </Link>
             </p>
             <p className="auth-form__help">
-              Need help? <a href="#" className="auth-form__link">Contact Support</a>
+              Need help? <button type="button" className="auth-form__link" onClick={() => window.location.href = 'mailto:support@bloodwarriors.com'}>Contact Support</button>
             </p>
           </div>
         </div>
