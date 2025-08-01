@@ -115,11 +115,15 @@ class TokenController {
         .eq("token_id", decoded.tokenId);
 
       // Store new refresh token
+      const crypto = require("crypto");
+      const tokenHash = crypto.createHash("sha256").update(newTokens.refreshToken).digest("hex");
+
       const { error: newTokenError } = await supabase
         .from("refresh_tokens")
         .insert({
           user_id: userData.user_id,
           token_id: newTokens.refreshTokenId,
+          token_hash: tokenHash,
           expires_at: newTokens.refreshTokenExpiresAt,
           created_at: new Date().toISOString(),
           ip_address: clientIP,

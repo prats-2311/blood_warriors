@@ -98,9 +98,13 @@ export const AuthProvider = ({ children }) => {
         const { access_token, refresh_token } = data.data;
 
         setAccessToken(access_token);
-        setRefreshToken(refresh_token);
         setStoredToken(access_token);
-        setStoredRefreshToken(refresh_token);
+
+        // Only update refresh token if it's provided (not using cookies)
+        if (refresh_token) {
+          setRefreshToken(refresh_token);
+          setStoredRefreshToken(refresh_token);
+        }
 
         const payload = getTokenPayload(access_token);
         if (payload) {
@@ -189,11 +193,15 @@ export const AuthProvider = ({ children }) => {
       }
 
       const { access_token, refresh_token, user: userData } = data.data;
-      
+
       setAccessToken(access_token);
-      setRefreshToken(refresh_token);
       setStoredToken(access_token);
-      setStoredRefreshToken(refresh_token);
+
+      // Only set refresh token if it's provided (not using cookies)
+      if (refresh_token) {
+        setRefreshToken(refresh_token);
+        setStoredRefreshToken(refresh_token);
+      }
       
       setUser({
         id: userData.user_id,

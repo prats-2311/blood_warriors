@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../contexts/JWTAuthContext';
 
@@ -86,17 +86,17 @@ export const useLogin = () => {
 
   const handleLogin = async (credentials, options = {}) => {
     const { rememberMe = false, redirectTo } = options;
-    
+
     setIsLoading(true);
     setError(null);
 
     try {
       await login(credentials.email, credentials.password, rememberMe);
-      
+
       // Determine redirect location
       const from = location.state?.from?.pathname || redirectTo || '/app/dashboard';
       navigate(from, { replace: true });
-      
+
       return { success: true };
     } catch (err) {
       const errorMessage = err.message || 'Login failed';
@@ -107,7 +107,7 @@ export const useLogin = () => {
     }
   };
 
-  const clearError = () => setError(null);
+  const clearError = useCallback(() => setError(null), []);
 
   return {
     handleLogin,
@@ -153,22 +153,22 @@ export const useRegister = () => {
 
   const handleRegister = async (userData, options = {}) => {
     const { redirectTo = '/login' } = options;
-    
+
     setIsLoading(true);
     setError(null);
 
     try {
       const result = await register(userData);
-      
+
       // Registration successful, redirect to login or verification page
-      navigate(redirectTo, { 
+      navigate(redirectTo, {
         replace: true,
-        state: { 
+        state: {
           message: 'Registration successful! Please check your email to verify your account.',
-          email: userData.email 
+          email: userData.email
         }
       });
-      
+
       return { success: true, data: result };
     } catch (err) {
       const errorMessage = err.message || 'Registration failed';
@@ -179,7 +179,7 @@ export const useRegister = () => {
     }
   };
 
-  const clearError = () => setError(null);
+  const clearError = useCallback(() => setError(null), []);
 
   return {
     handleRegister,
@@ -250,10 +250,10 @@ export const usePasswordManagement = () => {
     }
   };
 
-  const clearMessages = () => {
+  const clearMessages = useCallback(() => {
     setError(null);
     setSuccess(null);
-  };
+  }, []);
 
   return {
     handleForgotPassword,
@@ -288,7 +288,7 @@ export const useProfile = () => {
     }
   };
 
-  const clearError = () => setError(null);
+  const clearError = useCallback(() => setError(null), []);
 
   return {
     profile,
