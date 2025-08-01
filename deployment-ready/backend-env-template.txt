@@ -1,5 +1,5 @@
-# Development Environment Variables
-# Copy your actual Supabase credentials here
+# Production Environment Variables for Render Deployment
+# Copy these to Render Environment Variables section
 
 # Supabase Configuration (REQUIRED)
 SUPABASE_URL=https://your-project-id.supabase.co
@@ -8,24 +8,26 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 
 # Server Configuration
 PORT=4000
-NODE_ENV=development
+NODE_ENV=production
 
-# JWT Configuration
-JWT_SECRET=your-development-jwt-secret-key
+# JWT Configuration (Generate a strong secret)
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production-make-it-long-and-random
 JWT_EXPIRES_IN=7d
 
-# CORS Configuration (Local frontend)
-FRONTEND_URL=http://localhost:3000
+# CORS Configuration (Your Netlify frontend URL)
+FRONTEND_URL=https://your-app-name.netlify.app
 
-# AI Personalization Features (Optional)
+# AI Personalization Features (Optional but recommended)
+# Get from https://www.qloo.com/
 QLOO_API_KEY=your-qloo-api-key-here
 QLOO_API_URL=https://api.qloo.com/v1
 
-# LLM Configuration (Optional)
+# LLM Configuration (Optional - for enhanced CareBot)
+# Get from https://huggingface.co/settings/tokens
 LLM_API_URL=https://api-inference.huggingface.co/models
 LLM_API_KEY=your-huggingface-api-key-here
 
-# Firebase Configuration (Optional)
+# Firebase Configuration (Optional - for Push Notifications)
 FIREBASE_PROJECT_ID=your-firebase-project-id
 FIREBASE_CLIENT_EMAIL=your-firebase-client-email
 FIREBASE_PRIVATE_KEY="your-firebase-private-key"

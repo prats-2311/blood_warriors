@@ -4,12 +4,17 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Environment variables
+# Environment variables (NEVER commit these - contain sensitive data)
 .env
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
 .env.production.local
+.env.backup
+
+# Only .env.example and .env.production (templates) should be committed
 
 # Build outputs
 build/
@@ -135,3 +140,12 @@ pids
 # OS
 .DS_Store
 Thumbs.db
+
+# Zencoder configuration (contains sensitive information)
+.zencoder
+
+# Sensitive credential files
+**/keys_from_supabase_dashboard.txt
+**/credentials.txt
+**/secrets.txt
+test_connection.sh

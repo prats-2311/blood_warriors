@@ -1,42 +1,44 @@
-# 🚀 Deployment Checklist
+# ✅ Deployment Checklist - Netlify + Render + Supabase
 
-## 📋 Pre-Deployment Setup
+## 🚀 **Pre-Deployment Preparation**
 
-### ✅ Environment Variables Setup
+### ✅ **Code Preparation**
+- [ ] Run `./test-production-build.sh` to verify build works
+- [ ] Run `./prepare-deployment.sh` to create deployment package
+- [ ] Commit all changes to Git repository
+- [ ] Push to GitHub (required for auto-deployment)
 
-```bash
-# Run this script to set up your local environment
-./setup-env.sh
-```
+### ✅ **Environment Setup**
+- [ ] Generate secure JWT secret (32+ characters)
+- [ ] Prepare all API keys (Qloo, Hugging Face, Firebase - optional)
+- [ ] Have GitHub repository ready and accessible
 
-### ✅ Database Migration
+---
 
-1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
-2. Navigate to **SQL Editor**
-3. Copy and paste the migration from `supabase/migrations/20240101000016_add_patient_taste_keywords.sql`
-4. Click **Run**
+## 🗄️ **Step 1: Supabase Database Setup**
 
-### ✅ Test Locally
+### ✅ **Create Project**
+- [ ] Go to [supabase.com/dashboard](https://supabase.com/dashboard)
+- [ ] Click "New Project"
+- [ ] Choose organization
+- [ ] Set project name: `blood-warriors-ai`
+- [ ] Generate strong database password
+- [ ] Select region closest to your users
+- [ ] Wait for project creation (2-3 minutes)
 
-```bash
-# Test backend
-cd backend
-npm install
-npm start
+### ✅ **Apply Database Schema**
+- [ ] Go to **SQL Editor** in Supabase Dashboard
+- [ ] Copy content from `supabase/migrations/20250731154634_initial_schema_with_auth_fixed.sql`
+- [ ] Paste and click **Run**
+- [ ] Copy content from `supabase/migrations/20250731154733_add_indexes_and_functions.sql`
+- [ ] Paste and click **Run**
+- [ ] Verify tables created successfully
 
-# Test frontend (in new terminal)
-cd frontend
-npm install
-npm start
-```
-
-## 🗄️ Supabase Setup
-
-- [ ] Create Supabase project
-- [ ] Copy URL and API keys
-- [ ] Apply database migration
-- [ ] Test database connection
-- [ ] Configure RLS policies (if needed)
+### ✅ **Get Credentials**
+- [ ] Go to **Settings > API**
+- [ ] Copy **Project URL**: `https://your-project-id.supabase.co`
+- [ ] Copy **Anon Key**: `eyJhbGciOiJIUzI1NiIs...`
+- [ ] Copy **Service Role Key**: `eyJhbGciOiJIUzI1NiIs...`
 
 ## 🖥️ Backend Deployment (Render)
 

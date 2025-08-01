@@ -1,0 +1,27 @@
+{
+  "short_name": "Blood Warriors",
+  "name": "Blood Warriors AI Platform",
+  "description": "AI-powered platform connecting Thalassemia patients with blood donors",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#e74c3c",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "categories": ["health", "medical", "social"],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
+}

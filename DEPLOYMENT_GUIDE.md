@@ -41,7 +41,8 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ### 1.3 Apply Database Migration
 
 1. Go to **SQL Editor** in Supabase Dashboard
-2. Copy and paste the migration SQL from `supabase/migrations/20240101000016_add_patient_taste_keywords.sql`
+2. Copy and paste the migration SQL from `supabase/migrations/20250731154634_initial_schema_with_auth_fixed.sql`
+3. Then run the indexes migration from `supabase/migrations/20250731154733_add_indexes_and_functions.sql`
 3. Click **Run** to apply the migration
 
 ## 🖥️ Step 2: Backend Deployment (Render)
