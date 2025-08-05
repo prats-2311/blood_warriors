@@ -79,12 +79,14 @@ Guidelines:
               'Authorization': `Bearer ${process.env.HF_TOKEN}`
             },
             body: JSON.stringify({
-              inputs: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: message }
-              ],
-              parameters: {
+              inputs: `<|system|>
+You are CareBot, a supportive companion for a Thalassemia patient. Use the user's known interests to provide comfort and suggest positive distractions. Do not give medical advice. User Context: ${JSON.stringify(userContext)}</s>
+<|user|>
+${message}</s>
+<|assistant|>`,
+              parameters: { 
                 max_new_tokens: 150,
+                return_full_text: false,
                 temperature: 0.7,
                 do_sample: true
               }
@@ -94,7 +96,7 @@ Guidelines:
 
         if (response.ok) {
           const result = await response.json();
-          const botResponse = result[0]?.generated_text?.slice(-1)[0]?.content ||
+          const botResponse = result[0].generated_text.trim() ||
                              'I understand you need support. Please know that you\'re not alone in this journey.';
 
           // Save chat history
