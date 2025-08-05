@@ -1,7 +1,7 @@
 const express = require("express");
 const AuthMiddleware = require("../middleware/AuthMiddleware");
 const { supabase } = require("../utils/supabase");
-const qlooService = require("../services/qlooService");
+const qlooService = require("../services/QlooService");
 
 const router = express.Router();
 const authMiddleware = new AuthMiddleware();
