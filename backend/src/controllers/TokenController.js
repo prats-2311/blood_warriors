@@ -91,9 +91,29 @@ class TokenController {
         .single();
 
       if (userError || !userData) {
+        // Clean up the invalid refresh token
+        await supabase
+          .from("refresh_tokens")
+          .delete()
+          .eq("token_id", decoded.tokenId);
+          
         return res.status(401).json({
           status: "error",
           message: "User account not found",
+        });
+      }
+
+      // Validate user data before creating token payload
+      if (!userData.user_id) {
+        // Clean up the invalid refresh token
+        await supabase
+          .from("refresh_tokens")
+          .delete()
+          .eq("token_id", decoded.tokenId);
+          
+        return res.status(401).json({
+          status: "error",
+          message: "Invalid user data",
         });
       }
 
@@ -105,7 +125,21 @@ class TokenController {
         isVerified: userData.is_verified,
       };
 
-      const newTokens = this.jwtService.generateTokenPair(tokenPayload);
+      let newTokens;
+      try {
+        newTokens = this.jwtService.generateTokenPair(tokenPayload);
+      } catch (tokenError) {
+        // Clean up the invalid refresh token
+        await supabase
+          .from("refresh_tokens")
+          .delete()
+          .eq("token_id", decoded.tokenId);
+          
+        return res.status(500).json({
+          status: "error",
+          message: "Failed to generate new tokens",
+        });
+      }
 
       // Revoke old tokens
       this.jwtService.revokeToken(refresh_token);

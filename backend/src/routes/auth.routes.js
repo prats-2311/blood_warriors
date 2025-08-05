@@ -83,4 +83,42 @@ router.get("/debug/token", authMiddleware.authenticate, (req, res) => {
   });
 });
 
+// Admin cleanup endpoint
+router.post("/cleanup/expired-tokens", authMiddleware.authenticate, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (req.user.user_type !== 'Admin') {
+      return res.status(403).json({
+        status: "error",
+        message: "Admin access required"
+      });
+    }
+
+    const { supabase } = require("../utils/supabase");
+    
+    // Call the cleanup function
+    const { data, error } = await supabase.rpc('cleanup_expired_auth_tokens');
+    
+    if (error) {
+      console.error("Cleanup error:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to cleanup expired tokens"
+      });
+    }
+
+    res.json({
+      status: "success",
+      message: "Expired tokens cleaned up successfully",
+      deletedCount: data
+    });
+  } catch (error) {
+    console.error("Cleanup endpoint error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error"
+    });
+  }
+});
+
 module.exports = router;
