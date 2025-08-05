@@ -358,6 +358,122 @@ router.get("/:id/coupons", authMiddleware.authenticate, async (req, res) => {
 });
 
 /**
+ * Get donor expiring coupons
+ */
+router.get("/:id/coupons/expiring", authMiddleware.authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { days = 7 } = req.query;
+    const userId = req.user.user_id;
+
+    // Check if user is accessing their own coupons
+    if (parseInt(id) !== userId) {
+      return res.status(403).json({
+        status: "error",
+        message: "Not authorized to access these coupons",
+      });
+    }
+
+    // Calculate the date threshold for expiring coupons
+    const expiryThreshold = new Date();
+    expiryThreshold.setDate(expiryThreshold.getDate() + parseInt(days));
+
+    const { data, error } = await supabase
+      .from("donorcoupons")
+      .select(
+        `
+        *,
+        coupons!inner(
+          coupon_id,
+          partner_name,
+          coupon_title,
+          expiry_date
+        )
+      `
+      )
+      .eq("donor_id", id)
+      .eq("status", "Issued")
+      .not("coupons.expiry_date", "is", null)
+      .lte("coupons.expiry_date", expiryThreshold.toISOString())
+      .order("coupons.expiry_date", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching expiring coupons:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to fetch expiring coupons",
+      });
+    }
+
+    res.json({
+      status: "success",
+      data: data || [],
+    });
+  } catch (error) {
+    console.error("Expiring coupons fetch error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+    });
+  }
+});
+
+/**
+ * Get donor coupon statistics
+ */
+router.get("/:id/coupon-stats", authMiddleware.authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.user_id;
+
+    // Check if user is accessing their own stats
+    if (parseInt(id) !== userId) {
+      return res.status(403).json({
+        status: "error",
+        message: "Not authorized to access these statistics",
+      });
+    }
+
+    // Get coupon statistics
+    const { data: stats, error } = await supabase
+      .from("donorcoupons")
+      .select("status")
+      .eq("donor_id", id);
+
+    if (error) {
+      console.error("Error fetching coupon stats:", error);
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to fetch coupon statistics",
+      });
+    }
+
+    // Calculate statistics
+    const totalIssued = stats?.length || 0;
+    const totalRedeemed = stats?.filter(s => s.status === 'Redeemed').length || 0;
+    const totalExpired = stats?.filter(s => s.status === 'Expired').length || 0;
+    const totalAvailable = stats?.filter(s => s.status === 'Issued').length || 0;
+
+    res.json({
+      status: "success",
+      data: {
+        total_issued: totalIssued,
+        total_redeemed: totalRedeemed,
+        total_expired: totalExpired,
+        total_available: totalAvailable,
+        redemption_rate: totalIssued > 0 ? ((totalRedeemed / totalIssued) * 100).toFixed(1) : 0
+      },
+    });
+  } catch (error) {
+    console.error("Coupon stats fetch error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+    });
+  }
+});
+
+/**
  * Record a donation and automatically issue reward coupons
  */
 router.post("/:id/donations", authMiddleware.authenticate, async (req, res) => {
