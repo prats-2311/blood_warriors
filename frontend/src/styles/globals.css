@@ -57,9 +57,9 @@
   --color-text-inverse: #ffffff;
 
   /* Background Colors */
-  --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f9fafb;
-  --color-bg-tertiary: #f3f4f6;
+  --color-bg-primary: #fefefe;
+  --color-bg-secondary: #f8fafc;
+  --color-bg-tertiary: #f1f5f9;
 
   /* Border Colors */
   --color-border-primary: #e5e7eb;

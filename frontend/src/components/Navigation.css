@@ -162,7 +162,7 @@
   right: 0;
   width: 360px;
   max-width: calc(100vw - 32px);
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
@@ -352,7 +352,7 @@
   right: 0;
   width: 300px;
   max-width: calc(100vw - 32px);
-  background: white;
+  background: var(--color-bg-primary);
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);

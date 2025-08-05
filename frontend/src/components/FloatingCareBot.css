@@ -58,7 +58,7 @@
   max-width: calc(100vw - 40px);
   height: 550px;
   max-height: calc(100vh - 120px);
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 16px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(0, 0, 0, 0.1);
@@ -150,7 +150,7 @@
 }
 
 .floating-carebot .chat-message.bot .message-content {
-  background: white;
+  background: var(--color-bg-secondary);
   color: var(--color-text-primary);
   border: 1px solid #e2e8f0;
   border-bottom-left-radius: 4px;
@@ -204,7 +204,7 @@
 
 .floating-carebot .quick-question-btn {
   padding: 6px 12px;
-  background: white;
+  background: var(--color-bg-secondary);
   border: 1px solid #cbd5e0;
   border-radius: 16px;
   color: var(--color-primary-700);
@@ -229,7 +229,7 @@
   display: flex;
   gap: 8px;
   padding: 12px 15px;
-  background: white;
+  background: var(--color-bg-secondary);
   border-top: 1px solid #e2e8f0;
 }
 

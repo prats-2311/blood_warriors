@@ -39,7 +39,7 @@
 }
 
 .coupon-stat-card {
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   padding: 1.5rem;
@@ -135,7 +135,7 @@
   border-radius: 8px;
   width: 250px;
   font-size: 0.9rem;
-  background: white;
+  background: var(--color-bg-secondary);
   transition: all 0.2s ease;
 }
 
@@ -156,7 +156,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   font-size: 0.9rem;
-  background: white;
+  background: var(--color-bg-secondary);
   width: 200px;
 }
 
@@ -171,7 +171,7 @@
 }
 
 .coupon-card {
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   overflow: hidden;
@@ -282,7 +282,7 @@
 /* No Coupons State */
 .no-coupons {
   grid-column: 1 / -1;
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   padding: 3rem;
@@ -311,7 +311,7 @@
 
 /* How to Earn Section */
 .how-to-earn {
-  background: white;
+  background: var(--color-bg-primary);
   padding: 3rem 2rem;
   margin-top: 3rem;
   text-align: center;
@@ -379,7 +379,7 @@
 }
 
 .coupon-modal {
-  background: white;
+  background: var(--color-bg-primary);
   border-radius: 12px;
   width: 100%;
   max-width: 500px;
@@ -450,7 +450,7 @@
   left: 0;
   right: 0;
   height: 20px;
-  background: white;
+  background: var(--color-bg-primary);
   border-top-left-radius: 50% 100%;
   border-top-right-radius: 50% 100%;
 }
