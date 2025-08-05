@@ -23,6 +23,8 @@ import BloodBanks from "./pages/BloodBanks";
 import CareBot from "./pages/CareBot";
 import Notifications from "./pages/Notifications";
 import Coupons from "./pages/Coupons";
+import EnhancedCoupons from "./pages/EnhancedCoupons";
+import FloatingCareBot from "./components/FloatingCareBot";
 import AuthCallback from "./pages/AuthCallback";
 import LandingPage from "./components/LandingPage";
 import "./styles/globals.css";
@@ -36,6 +38,7 @@ const AppLayout = ({ children }) => (
     <main className="app-main">
       {children}
     </main>
+    <FloatingCareBot />
   </div>
 );
 
@@ -73,7 +76,8 @@ function App() {
                       <Route path="blood-banks" element={<BloodBanks />} />
                       <Route path="carebot" element={<CareBot />} />
                       <Route path="notifications" element={<Notifications />} />
-                      <Route path="coupons" element={<Coupons />} />
+                      <Route path="coupons" element={<EnhancedCoupons />} />
+                      <Route path="coupons-old" element={<Coupons />} />
                     </Routes>
                   </AppLayout>
                 </ProtectedRoute>

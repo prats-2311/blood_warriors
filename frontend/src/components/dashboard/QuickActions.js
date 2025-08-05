@@ -65,11 +65,11 @@ const QuickActions = ({ stats = {}, onActionClick = null }) => {
     {
       id: "carebot",
       title: "Ask CareBot",
-      description: "Get health guidance",
+      description: "AI health companion",
       icon: "🤖",
       color: "info",
       action: () => handleAction("carebot", "/app/carebot"),
-      priority: 5,
+      priority: 2,
     },
   ];
 
@@ -110,6 +110,15 @@ const QuickActions = ({ stats = {}, onActionClick = null }) => {
       icon: "🎫",
       color: "info",
       action: () => handleAction("coupons", "/app/coupons"),
+      priority: 4,
+    },
+    {
+      id: "carebot",
+      title: "Ask CareBot",
+      description: "AI health companion",
+      icon: "🤖",
+      color: "info",
+      action: () => handleAction("carebot", "/app/carebot"),
       priority: 4,
     },
     {

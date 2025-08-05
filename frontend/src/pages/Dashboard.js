@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useDashboard } from "../hooks/useDashboard";
 import {
@@ -8,6 +9,7 @@ import {
   DashboardPreferences,
 } from "../components/dashboard";
 import AuthDebug from "../components/AuthDebug";
+import "../components/ui/Card.css";
 
 const Dashboard = () => {
   const { profile } = useAuth();
@@ -26,6 +28,7 @@ const Dashboard = () => {
     showHealthTips: true,
     showRecentActivity: true,
     showStatistics: true,
+    showCareBot: true,
   });
 
   const { stats, recentRequests, recentNotifications, healthTips } =
@@ -315,6 +318,35 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* CareBot Widget */}
+      {preferences.showCareBot && (
+        <div className="card">
+        <div className="card__header">
+          <h3>🤖 CareBot - Your AI Health Companion</h3>
+        </div>
+        <div className="card__body">
+          <div className="carebot-widget">
+            <p className="carebot-description">
+              Get personalized health guidance and support from our AI assistant.
+              Ask questions about blood disorders, general health, or just chat for emotional support.
+            </p>
+            <div className="carebot-actions">
+              <Link to="/app/carebot" className="btn btn-primary">
+                <span>💬</span>
+                Start Conversation
+              </Link>
+              <div className="carebot-features">
+                <span className="feature-tag">🩸 Blood Disorder Support</span>
+                <span className="feature-tag">💊 Health Guidance</span>
+                <span className="feature-tag">🤗 Emotional Support</span>
+                <span className="feature-tag">🎯 Personalized Responses</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       )}
 
       {/* Dashboard Preferences Modal */}

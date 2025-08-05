@@ -298,6 +298,140 @@ class QlooService {
       rateLimitDelay: this.rateLimitDelay,
     };
   }
+  /**
+   * Find matching coupons based on donor interests
+   */
+  async findMatchingCoupons(donorInterests, availableCoupons) {
+    try {
+      // Enrich donor interests first
+      const enrichedKeywords = await this.getTasteProfile(donorInterests);
+      const allKeywords = [...donorInterests, ...enrichedKeywords];
+
+      const matches = [];
+
+      for (const coupon of availableCoupons) {
+        const matchScore = this.calculateCouponMatchScore(allKeywords, coupon.target_keywords);
+
+        if (matchScore > 0.3) { // 30% threshold for relevance
+          matches.push({
+            ...coupon,
+            match_score: matchScore,
+            matching_keywords: this.findMatchingKeywords(allKeywords, coupon.target_keywords)
+          });
+        }
+      }
+
+      // Sort by match score (highest first)
+      return matches.sort((a, b) => b.match_score - a.match_score);
+    } catch (error) {
+      console.error('Error finding matching coupons:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Calculate match score between interests and coupon keywords
+   */
+  calculateCouponMatchScore(interests, targetKeywords) {
+    if (!interests || !targetKeywords || !Array.isArray(targetKeywords)) {
+      return 0;
+    }
+
+    const interestSet = new Set(interests.map(i => i.toLowerCase()));
+    const targetSet = new Set(targetKeywords.map(k => k.toLowerCase()));
+
+    let matches = 0;
+    let totalWeight = targetSet.size;
+
+    for (const keyword of targetSet) {
+      // Exact match
+      if (interestSet.has(keyword)) {
+        matches += 1;
+        continue;
+      }
+
+      // Partial match (contains)
+      for (const interest of interestSet) {
+        if (interest.includes(keyword) || keyword.includes(interest)) {
+          matches += 0.7; // Partial match weight
+          break;
+        }
+      }
+
+      // Semantic similarity
+      const semanticMatch = this.findSemanticMatch(keyword, Array.from(interestSet));
+      if (semanticMatch > 0) {
+        matches += semanticMatch * 0.5; // Semantic match weight
+      }
+    }
+
+    return totalWeight > 0 ? matches / totalWeight : 0;
+  }
+
+  /**
+   * Find matching keywords between two arrays
+   */
+  findMatchingKeywords(interests, targetKeywords) {
+    const matches = [];
+    const interestSet = new Set(interests.map(i => i.toLowerCase()));
+
+    for (const keyword of targetKeywords) {
+      if (interestSet.has(keyword.toLowerCase())) {
+        matches.push(keyword);
+      }
+    }
+
+    return matches;
+  }
+
+  /**
+   * Basic semantic matching
+   */
+  findSemanticMatch(keyword, interests) {
+    const semanticGroups = {
+      food: ['cooking', 'eating', 'dining', 'restaurant', 'cuisine', 'recipe', 'coffee', 'tea'],
+      entertainment: ['movies', 'music', 'tv', 'shows', 'gaming', 'books', 'streaming'],
+      health: ['fitness', 'exercise', 'wellness', 'nutrition', 'medical', 'yoga', 'gym'],
+      technology: ['tech', 'gadgets', 'apps', 'software', 'digital', 'electronics'],
+      lifestyle: ['fashion', 'travel', 'home', 'family', 'social', 'shopping'],
+      sports: ['sports', 'football', 'basketball', 'tennis', 'running', 'cycling']
+    };
+
+    for (const [category, words] of Object.entries(semanticGroups)) {
+      if (words.includes(keyword.toLowerCase())) {
+        for (const interest of interests) {
+          if (words.includes(interest.toLowerCase())) {
+            return 0.6; // Semantic similarity score
+          }
+        }
+      }
+    }
+
+    return 0;
+  }
+
+  /**
+   * Generate personalized coupon recommendations for a donor
+   */
+  async generateCouponRecommendations(donorInterests, availableCoupons, limit = 5) {
+    try {
+      const matchingCoupons = await this.findMatchingCoupons(donorInterests, availableCoupons);
+
+      return {
+        success: true,
+        recommendations: matchingCoupons.slice(0, limit),
+        total_matches: matchingCoupons.length,
+        source: this.isEnabled ? 'qloo' : 'fallback'
+      };
+    } catch (error) {
+      console.error('Error generating coupon recommendations:', error);
+      return {
+        success: false,
+        error: error.message,
+        recommendations: []
+      };
+    }
+  }
 }
 
 module.exports = new QlooService();

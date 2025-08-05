@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useProfile } from '../hooks/useAuth';
 import Card, { StatCard, RequestCard } from './ui/Card';
 import Button, { HeartIcon, LocationIcon, PlusIcon } from './ui/Button';
+import RewardsWidget from './RewardsWidget';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -168,68 +169,93 @@ const Dashboard = () => {
 
         {/* Main Content Grid */}
         <div className="dashboard__content">
-          {/* Recent Requests */}
-          <div className="dashboard__section">
-            <div className="dashboard__section-header">
-              <h2 className="dashboard__section-title">Your Recent Requests</h2>
-              <Link to="/app/requests" className="dashboard__section-link">
-                View All
-              </Link>
+          <div className="dashboard__main-column">
+            {/* Recent Requests */}
+            <div className="dashboard__section">
+              <div className="dashboard__section-header">
+                <h2 className="dashboard__section-title">Your Recent Requests</h2>
+                <Link to="/app/requests" className="dashboard__section-link">
+                  View All
+                </Link>
+              </div>
+              
+              <div className="dashboard__requests">
+                {recentRequests.length > 0 ? (
+                  recentRequests.map(request => (
+                    <RequestCard
+                      key={request.id}
+                      {...request}
+                      onRespond={(action) => handleRequestResponse(request.id, action)}
+                    />
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <div className="empty-icon">📋</div>
+                    <h3 className="empty-title">No Recent Requests</h3>
+                    <p className="empty-message">
+                      You haven't made any blood requests yet. Create your first request to get started.
+                    </p>
+                    <Link to="/app/requests/new">
+                      <Button variant="primary" icon={<PlusIcon />}>
+                        Create Request
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Nearby Requests */}
+            <div className="dashboard__section">
+              <div className="dashboard__section-header">
+                <h2 className="dashboard__section-title">Nearby Requests</h2>
+                <Link to="/app/requests?filter=nearby" className="dashboard__section-link">
+                  View All
+                </Link>
+              </div>
+              
+              <div className="dashboard__requests">
+                {nearbyRequests.length > 0 ? (
+                  nearbyRequests.map(request => (
+                    <RequestCard
+                      key={request.id}
+                      {...request}
+                      onRespond={(action) => handleRequestResponse(request.id, action)}
+                    />
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <div className="empty-icon">📍</div>
+                    <h3 className="empty-title">No Nearby Requests</h3>
+                    <p className="empty-message">
+                      There are no blood requests in your area right now. Check back later.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="dashboard__side-column">
+            {/* Rewards Widget */}
+            <RewardsWidget />
             
-            <div className="dashboard__requests">
-              {recentRequests.length > 0 ? (
-                recentRequests.map(request => (
-                  <RequestCard
-                    key={request.id}
-                    {...request}
-                    onRespond={(action) => handleRequestResponse(request.id, action)}
-                  />
-                ))
-              ) : (
-                <div className="empty-state">
-                  <div className="empty-icon">📋</div>
-                  <h3 className="empty-title">No Recent Requests</h3>
-                  <p className="empty-message">
-                    You haven't made any blood requests yet. Create your first request to get started.
-                  </p>
-                  <Link to="/app/requests/new">
-                    <Button variant="primary" icon={<PlusIcon />}>
-                      Create Request
+            {/* CareBot Shortcut */}
+            <div className="carebot-shortcut">
+              <Card variant="primary" padding="md">
+                <div className="carebot-shortcut__content">
+                  <div className="carebot-shortcut__icon">🤖</div>
+                  <div className="carebot-shortcut__text">
+                    <h3>Need Support?</h3>
+                    <p>Chat with CareBot, your AI health assistant</p>
+                  </div>
+                  <Link to="/app/carebot" className="carebot-shortcut__button">
+                    <Button variant="secondary" size="sm">
+                      Open CareBot
                     </Button>
                   </Link>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Nearby Requests */}
-          <div className="dashboard__section">
-            <div className="dashboard__section-header">
-              <h2 className="dashboard__section-title">Nearby Requests</h2>
-              <Link to="/app/requests?filter=nearby" className="dashboard__section-link">
-                View All
-              </Link>
-            </div>
-            
-            <div className="dashboard__requests">
-              {nearbyRequests.length > 0 ? (
-                nearbyRequests.map(request => (
-                  <RequestCard
-                    key={request.id}
-                    {...request}
-                    onRespond={(action) => handleRequestResponse(request.id, action)}
-                  />
-                ))
-              ) : (
-                <div className="empty-state">
-                  <div className="empty-icon">📍</div>
-                  <h3 className="empty-title">No Nearby Requests</h3>
-                  <p className="empty-message">
-                    There are no blood requests in your area right now. Check back later.
-                  </p>
-                </div>
-              )}
+              </Card>
             </div>
           </div>
         </div>

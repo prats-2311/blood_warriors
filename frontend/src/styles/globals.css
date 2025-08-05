@@ -703,3 +703,69 @@ img {
   background: var(--color-primary-200);
   color: var(--color-primary-900);
 }
+
+/* CareBot Widget Styles */
+.carebot-widget {
+  text-align: center;
+}
+
+.carebot-description {
+  margin-bottom: 1.5rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.carebot-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.carebot-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.feature-tag {
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid var(--color-primary-200);
+}
+
+/* Tab Navigation Styles */
+.tab-navigation {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--color-border-primary);
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.tab-btn:hover {
+  color: var(--color-primary-600);
+  background: var(--color-primary-50);
+}
+
+.tab-btn.active {
+  color: var(--color-primary-600);
+  border-bottom-color: var(--color-primary-600);
+  background: var(--color-primary-50);
+}

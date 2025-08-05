@@ -77,8 +77,18 @@ api.interceptors.response.use(
 
     // Handle auth errors
     if (error.response?.status === 401) {
-      // Token expired or invalid, redirect to login
-      window.location.href = "/login";
+      // Only redirect to login if we're not already on login page
+      // and if this is not a chat history request (which can fail gracefully)
+      const currentPath = window.location.pathname;
+      const isLoginPage = currentPath === '/login' || currentPath === '/';
+      const isChatHistoryRequest = error.config?.url?.includes('/ai/carebot/history');
+
+      if (!isLoginPage && !isChatHistoryRequest) {
+        console.log("Authentication failed, redirecting to login");
+        window.location.href = "/login";
+      } else {
+        console.log("Authentication failed but not redirecting:", { currentPath, isChatHistoryRequest });
+      }
     }
 
     return Promise.reject(error);
