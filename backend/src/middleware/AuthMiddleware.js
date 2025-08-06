@@ -87,8 +87,11 @@ class AuthMiddleware {
       // MVP: Skip account activation check for testing
       // All accounts are considered active for MVP
 
+      // Ensure userData is a single object, not an array
+      const userObject = Array.isArray(userData) ? userData[0] : userData;
+
       // Attach user data to request
-      req.user = userData;
+      req.user = userObject;
       req.tokenPayload = decoded;
 
       next();

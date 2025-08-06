@@ -406,7 +406,7 @@ router.get(
         .eq("status", "Issued")
         .not("coupons.expiry_date", "is", null)
         .lte("coupons.expiry_date", expiryThreshold.toISOString())
-        .order("coupons.expiry_date", { ascending: true });
+        .order("expiry_date", { ascending: true, foreignTable: "coupons" });
 
       if (error) {
         console.error("Error fetching expiring coupons:", error);
