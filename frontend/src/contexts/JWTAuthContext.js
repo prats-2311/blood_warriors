@@ -1,4 +1,10 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+} from "react";
 
 const AuthContext = createContext();
 
@@ -9,7 +15,8 @@ const REFRESH_TOKEN_KEY = "blood_warriors_refresh_token";
 const getStoredToken = () => localStorage.getItem(TOKEN_KEY);
 const getStoredRefreshToken = () => localStorage.getItem(REFRESH_TOKEN_KEY);
 const setStoredToken = (token) => localStorage.setItem(TOKEN_KEY, token);
-const setStoredRefreshToken = (token) => localStorage.setItem(REFRESH_TOKEN_KEY, token);
+const setStoredRefreshToken = (token) =>
+  localStorage.setItem(REFRESH_TOKEN_KEY, token);
 const removeStoredTokens = () => {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
@@ -18,9 +25,9 @@ const removeStoredTokens = () => {
 // JWT token utilities
 const isTokenExpired = (token) => {
   if (!token) return true;
-  
+
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const payload = JSON.parse(atob(token.split(".")[1]));
     const currentTime = Date.now() / 1000;
     return payload.exp < currentTime;
   } catch (error) {
@@ -30,9 +37,9 @@ const isTokenExpired = (token) => {
 
 const getTokenPayload = (token) => {
   if (!token) return null;
-  
+
   try {
-    return JSON.parse(atob(token.split('.')[1]));
+    return JSON.parse(atob(token.split(".")[1]));
   } catch (error) {
     return null;
   }
@@ -47,9 +54,6 @@ export const AuthProvider = ({ children }) => {
 
   const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:4000/api";
 
-
-
-
   const clearAuthState = () => {
     setUser(null);
     setProfile(null);
@@ -58,75 +62,83 @@ export const AuthProvider = ({ children }) => {
     removeStoredTokens();
   };
 
-  const fetchProfile = useCallback(async (token) => {
-    if (!token) return;
+  const refreshAccessToken = useCallback(
+    async (refreshTokenValue) => {
+      try {
+        const response = await fetch(`${apiUrl}/auth/token/refresh`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            refresh_token: refreshTokenValue,
+          }),
+        });
 
-    try {
-      const response = await fetch(`${apiUrl}/auth/profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+        if (response.ok) {
+          const data = await response.json();
+          const { access_token, refresh_token } = data.data;
 
-      if (response.ok) {
-        const data = await response.json();
-        setProfile(data.data);
-      } else if (response.status === 401) {
-        // Token is invalid, clear auth state
-        clearAuthState();
-      }
-    } catch (error) {
-      console.error("Profile fetch error:", error);
-    }
-  }, [apiUrl]);
+          setAccessToken(access_token);
+          setStoredToken(access_token);
 
-  const refreshAccessToken = useCallback(async (refreshTokenValue) => {
-    try {
-      const response = await fetch(`${apiUrl}/auth/token/refresh`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          refresh_token: refreshTokenValue,
-        }),
-      });
+          // Only update refresh token if it's provided (not using cookies)
+          if (refresh_token) {
+            setRefreshToken(refresh_token);
+            setStoredRefreshToken(refresh_token);
+          }
 
-      if (response.ok) {
-        const data = await response.json();
-        const { access_token, refresh_token } = data.data;
+          const payload = getTokenPayload(access_token);
+          if (payload) {
+            setUser({
+              id: payload.sub,
+              email: payload.email,
+              userType: payload.userType,
+              isVerified: payload.isVerified,
+            });
+          }
 
-        setAccessToken(access_token);
-        setStoredToken(access_token);
-
-        // Only update refresh token if it's provided (not using cookies)
-        if (refresh_token) {
-          setRefreshToken(refresh_token);
-          setStoredRefreshToken(refresh_token);
+          return true;
+        } else {
+          clearAuthState();
+          return false;
         }
-
-        const payload = getTokenPayload(access_token);
-        if (payload) {
-          setUser({
-            id: payload.sub,
-            email: payload.email,
-            userType: payload.userType,
-            isVerified: payload.isVerified,
-          });
-        }
-
-        return true;
-      } else {
+      } catch (error) {
+        console.error("Token refresh error:", error);
         clearAuthState();
         return false;
       }
-    } catch (error) {
-      console.error("Token refresh error:", error);
-      clearAuthState();
-      return false;
-    }
-  }, [apiUrl]);
+    },
+    [apiUrl]
+  );
+
+  const fetchProfile = useCallback(
+    async (token) => {
+      if (!token) return;
+
+      try {
+        const response = await fetch(`${apiUrl}/auth/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setProfile(data.data);
+        } else if (response.status === 401) {
+          // Token is invalid, don't try to refresh here to avoid loops
+          // The token refresh should be handled by the auth initialization
+          console.warn("Profile fetch failed: token invalid");
+        }
+      } catch (error) {
+        console.error("Profile fetch error:", error);
+        // Don't clear auth state on network errors
+      }
+    },
+    [apiUrl]
+  );
 
   const initializeAuth = useCallback(async () => {
     try {
@@ -147,17 +159,53 @@ export const AuthProvider = ({ children }) => {
 
           const payload = getTokenPayload(storedToken);
           if (payload) {
-            setUser({
-              id: payload.sub,
-              email: payload.email,
-              userType: payload.userType,
-              isVerified: payload.isVerified,
-            });
+            // Validate token by making a test API call
+            try {
+              const response = await fetch(`${apiUrl}/auth/profile`, {
+                headers: {
+                  Authorization: `Bearer ${storedToken}`,
+                  "Content-Type": "application/json",
+                },
+              });
 
-            // Fetch full profile
-            await fetchProfile(storedToken);
+              if (response.ok) {
+                // Token is valid, set user state
+                setUser({
+                  id: payload.sub,
+                  email: payload.email,
+                  userType: payload.userType,
+                  isVerified: payload.isVerified,
+                });
+
+                // Set profile data
+                const data = await response.json();
+                setProfile(data.data);
+              } else if (response.status === 401) {
+                // Token is invalid, try to refresh
+                const refreshed = await refreshAccessToken(storedRefreshToken);
+                if (!refreshed) {
+                  clearAuthState();
+                }
+              } else {
+                // Other error, clear auth state
+                clearAuthState();
+              }
+            } catch (error) {
+              console.error("Token validation failed:", error);
+              // Try to refresh token on network error
+              const refreshed = await refreshAccessToken(storedRefreshToken);
+              if (!refreshed) {
+                clearAuthState();
+              }
+            }
+          } else {
+            // Invalid token payload
+            clearAuthState();
           }
         }
+      } else {
+        // No tokens found, user is not authenticated
+        clearAuthState();
       }
     } catch (error) {
       console.error("Auth initialization error:", error);
@@ -202,16 +250,16 @@ export const AuthProvider = ({ children }) => {
         setRefreshToken(refresh_token);
         setStoredRefreshToken(refresh_token);
       }
-      
+
       setUser({
         id: userData.user_id,
         email: userData.email,
         userType: userData.user_type,
         isVerified: userData.is_verified,
       });
-      
+
       setProfile(userData);
-      
+
       return data;
     } catch (error) {
       console.error("Login error:", error);
@@ -343,7 +391,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const changePassword = async (currentPassword, newPassword, confirmPassword) => {
+  const changePassword = async (
+    currentPassword,
+    newPassword,
+    confirmPassword
+  ) => {
     try {
       if (!accessToken) {
         throw new Error("Authentication required");
@@ -370,7 +422,7 @@ export const AuthProvider = ({ children }) => {
 
       // Clear tokens since all sessions are revoked after password change
       clearAuthState();
-      
+
       return data;
     } catch (error) {
       console.error("Change password error:", error);

@@ -37,20 +37,8 @@ export const useRoleAccess = (allowedRoles = []) => {
 };
 
 // Hook for authentication requirements
-export const useAuthRequired = (redirectTo = '/login') => {
+export const useAuthRequired = () => {
   const { user, loading } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      // Store the attempted location for redirect after login
-      navigate(redirectTo, { 
-        state: { from: location },
-        replace: true 
-      });
-    }
-  }, [user, loading, navigate, redirectTo, location]);
 
   return {
     isAuthenticated: !!user,
