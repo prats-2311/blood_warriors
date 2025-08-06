@@ -94,7 +94,7 @@ router.put("/:id/location", authMiddleware.authenticate, async (req, res) => {
     const userId = req.user.user_id;
 
     // Check if user is updating their own profile or is admin
-    if (parseInt(id) !== userId) {
+    if (id !== userId) {
       return res.status(403).json({
         status: "error",
         message: "Not authorized to update this donor",
@@ -140,47 +140,51 @@ router.put("/:id/location", authMiddleware.authenticate, async (req, res) => {
 /**
  * Update donor SOS availability
  */
-router.put("/:id/sos-availability", authMiddleware.authenticate, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { is_available_for_sos } = req.body;
-    const userId = req.user.user_id;
+router.put(
+  "/:id/sos-availability",
+  authMiddleware.authenticate,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { is_available_for_sos } = req.body;
+      const userId = req.user.user_id;
 
-    // Check if user is updating their own profile
-    if (parseInt(id) !== userId) {
-      return res.status(403).json({
+      // Check if user is updating their own profile
+      if (id !== userId) {
+        return res.status(403).json({
+          status: "error",
+          message: "Not authorized to update this donor",
+        });
+      }
+
+      const { error } = await supabase
+        .from("donors")
+        .update({
+          is_available_for_sos: Boolean(is_available_for_sos),
+        })
+        .eq("donor_id", id);
+
+      if (error) {
+        console.error("Error updating SOS availability:", error);
+        return res.status(500).json({
+          status: "error",
+          message: "Failed to update SOS availability",
+        });
+      }
+
+      res.json({
+        status: "success",
+        message: "SOS availability updated successfully",
+      });
+    } catch (error) {
+      console.error("SOS availability update error:", error);
+      res.status(500).json({
         status: "error",
-        message: "Not authorized to update this donor",
+        message: "Internal server error",
       });
     }
-
-    const { error } = await supabase
-      .from("donors")
-      .update({
-        is_available_for_sos: Boolean(is_available_for_sos),
-      })
-      .eq("donor_id", id);
-
-    if (error) {
-      console.error("Error updating SOS availability:", error);
-      return res.status(500).json({
-        status: "error",
-        message: "Failed to update SOS availability",
-      });
-    }
-
-    res.json({
-      status: "success",
-      message: "SOS availability updated successfully",
-    });
-  } catch (error) {
-    console.error("SOS availability update error:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Internal server error",
-    });
   }
-});
+);
 
 /**
  * Update donor interests/taste keywords
@@ -192,7 +196,7 @@ router.put("/:id/interests", authMiddleware.authenticate, async (req, res) => {
     const userId = req.user.user_id;
 
     // Check if user is updating their own profile
-    if (parseInt(id) !== userId) {
+    if (id !== userId) {
       return res.status(403).json({
         status: "error",
         message: "Not authorized to update this donor",
@@ -237,24 +241,27 @@ router.put("/:id/interests", authMiddleware.authenticate, async (req, res) => {
 /**
  * Get donor notifications
  */
-router.get("/:id/notifications", authMiddleware.authenticate, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status, limit = 50, offset = 0 } = req.query;
-    const userId = req.user.user_id;
+router.get(
+  "/:id/notifications",
+  authMiddleware.authenticate,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status, limit = 50, offset = 0 } = req.query;
+      const userId = req.user.user_id;
 
-    // Check if user is accessing their own notifications
-    if (parseInt(id) !== userId) {
-      return res.status(403).json({
-        status: "error",
-        message: "Not authorized to access these notifications",
-      });
-    }
+      // Check if user is accessing their own notifications
+      if (id !== userId) {
+        return res.status(403).json({
+          status: "error",
+          message: "Not authorized to access these notifications",
+        });
+      }
 
-    let query = supabase
-      .from("notifications")
-      .select(
-        `
+      let query = supabase
+        .from("notifications")
+        .select(
+          `
         *,
         donationrequests!inner(
           request_id,
@@ -265,37 +272,38 @@ router.get("/:id/notifications", authMiddleware.authenticate, async (req, res) =
           bloodcomponents!inner(component_name)
         )
       `
-      )
-      .eq("donor_id", id)
-      .order("sent_at", { ascending: false })
-      .range(offset, offset + limit - 1);
+        )
+        .eq("donor_id", id)
+        .order("sent_at", { ascending: false })
+        .range(offset, offset + limit - 1);
 
-    if (status) {
-      query = query.eq("status", status);
-    }
+      if (status) {
+        query = query.eq("status", status);
+      }
 
-    const { data, error } = await query;
+      const { data, error } = await query;
 
-    if (error) {
-      console.error("Error fetching notifications:", error);
-      return res.status(500).json({
+      if (error) {
+        console.error("Error fetching notifications:", error);
+        return res.status(500).json({
+          status: "error",
+          message: "Failed to fetch notifications",
+        });
+      }
+
+      res.json({
+        status: "success",
+        data: data || [],
+      });
+    } catch (error) {
+      console.error("Notifications fetch error:", error);
+      res.status(500).json({
         status: "error",
-        message: "Failed to fetch notifications",
+        message: "Internal server error",
       });
     }
-
-    res.json({
-      status: "success",
-      data: data || [],
-    });
-  } catch (error) {
-    console.error("Notifications fetch error:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Internal server error",
-    });
   }
-});
+);
 
 /**
  * Get donor coupons
@@ -307,7 +315,7 @@ router.get("/:id/coupons", authMiddleware.authenticate, async (req, res) => {
     const userId = req.user.user_id;
 
     // Check if user is accessing their own coupons
-    if (parseInt(id) !== userId) {
+    if (id !== userId) {
       return res.status(403).json({
         status: "error",
         message: "Not authorized to access these coupons",
@@ -360,28 +368,31 @@ router.get("/:id/coupons", authMiddleware.authenticate, async (req, res) => {
 /**
  * Get donor expiring coupons
  */
-router.get("/:id/coupons/expiring", authMiddleware.authenticate, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { days = 7 } = req.query;
-    const userId = req.user.user_id;
+router.get(
+  "/:id/coupons/expiring",
+  authMiddleware.authenticate,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { days = 7 } = req.query;
+      const userId = req.user.user_id;
 
-    // Check if user is accessing their own coupons
-    if (parseInt(id) !== userId) {
-      return res.status(403).json({
-        status: "error",
-        message: "Not authorized to access these coupons",
-      });
-    }
+      // Check if user is accessing their own coupons
+      if (id !== userId) {
+        return res.status(403).json({
+          status: "error",
+          message: "Not authorized to access these coupons",
+        });
+      }
 
-    // Calculate the date threshold for expiring coupons
-    const expiryThreshold = new Date();
-    expiryThreshold.setDate(expiryThreshold.getDate() + parseInt(days));
+      // Calculate the date threshold for expiring coupons
+      const expiryThreshold = new Date();
+      expiryThreshold.setDate(expiryThreshold.getDate() + parseInt(days));
 
-    const { data, error } = await supabase
-      .from("donorcoupons")
-      .select(
-        `
+      const { data, error } = await supabase
+        .from("donorcoupons")
+        .select(
+          `
         *,
         coupons!inner(
           coupon_id,
@@ -390,88 +401,99 @@ router.get("/:id/coupons/expiring", authMiddleware.authenticate, async (req, res
           expiry_date
         )
       `
-      )
-      .eq("donor_id", id)
-      .eq("status", "Issued")
-      .not("coupons.expiry_date", "is", null)
-      .lte("coupons.expiry_date", expiryThreshold.toISOString())
-      .order("coupons.expiry_date", { ascending: true });
+        )
+        .eq("donor_id", id)
+        .eq("status", "Issued")
+        .not("coupons.expiry_date", "is", null)
+        .lte("coupons.expiry_date", expiryThreshold.toISOString())
+        .order("coupons.expiry_date", { ascending: true });
 
-    if (error) {
-      console.error("Error fetching expiring coupons:", error);
-      return res.status(500).json({
+      if (error) {
+        console.error("Error fetching expiring coupons:", error);
+        return res.status(500).json({
+          status: "error",
+          message: "Failed to fetch expiring coupons",
+        });
+      }
+
+      res.json({
+        status: "success",
+        data: data || [],
+      });
+    } catch (error) {
+      console.error("Expiring coupons fetch error:", error);
+      res.status(500).json({
         status: "error",
-        message: "Failed to fetch expiring coupons",
+        message: "Internal server error",
       });
     }
-
-    res.json({
-      status: "success",
-      data: data || [],
-    });
-  } catch (error) {
-    console.error("Expiring coupons fetch error:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Internal server error",
-    });
   }
-});
+);
 
 /**
  * Get donor coupon statistics
  */
-router.get("/:id/coupon-stats", authMiddleware.authenticate, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.user_id;
+router.get(
+  "/:id/coupon-stats",
+  authMiddleware.authenticate,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.user_id;
 
-    // Check if user is accessing their own stats
-    if (parseInt(id) !== userId) {
-      return res.status(403).json({
+      // Check if user is accessing their own stats
+      if (id !== userId) {
+        return res.status(403).json({
+          status: "error",
+          message: "Not authorized to access these statistics",
+        });
+      }
+
+      // Get coupon statistics
+      const { data: stats, error } = await supabase
+        .from("donorcoupons")
+        .select("status")
+        .eq("donor_id", id);
+
+      if (error) {
+        console.error("Error fetching coupon stats:", error);
+        return res.status(500).json({
+          status: "error",
+          message: "Failed to fetch coupon statistics",
+        });
+      }
+
+      // Calculate statistics
+      const totalIssued = stats?.length || 0;
+      const totalRedeemed =
+        stats?.filter((s) => s.status === "Redeemed").length || 0;
+      const totalExpired =
+        stats?.filter((s) => s.status === "Expired").length || 0;
+      const totalAvailable =
+        stats?.filter((s) => s.status === "Issued").length || 0;
+
+      res.json({
+        status: "success",
+        data: {
+          total_issued: totalIssued,
+          total_redeemed: totalRedeemed,
+          total_expired: totalExpired,
+          total_available: totalAvailable,
+          redemption_rate:
+            totalIssued > 0
+              ? ((totalRedeemed / totalIssued) * 100).toFixed(1)
+              : 0,
+        },
+      });
+    } catch (error) {
+      console.error("Coupon stats fetch error:", error);
+      res.status(500).json({
         status: "error",
-        message: "Not authorized to access these statistics",
+        message: "Internal server error",
       });
     }
-
-    // Get coupon statistics
-    const { data: stats, error } = await supabase
-      .from("donorcoupons")
-      .select("status")
-      .eq("donor_id", id);
-
-    if (error) {
-      console.error("Error fetching coupon stats:", error);
-      return res.status(500).json({
-        status: "error",
-        message: "Failed to fetch coupon statistics",
-      });
-    }
-
-    // Calculate statistics
-    const totalIssued = stats?.length || 0;
-    const totalRedeemed = stats?.filter(s => s.status === 'Redeemed').length || 0;
-    const totalExpired = stats?.filter(s => s.status === 'Expired').length || 0;
-    const totalAvailable = stats?.filter(s => s.status === 'Issued').length || 0;
-
-    res.json({
-      status: "success",
-      data: {
-        total_issued: totalIssued,
-        total_redeemed: totalRedeemed,
-        total_expired: totalExpired,
-        total_available: totalAvailable,
-        redemption_rate: totalIssued > 0 ? ((totalRedeemed / totalIssued) * 100).toFixed(1) : 0
-      },
-    });
-  } catch (error) {
-    console.error("Coupon stats fetch error:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Internal server error",
-    });
   }
-});
+);
 
 /**
  * Record a donation and automatically issue reward coupons
@@ -483,7 +505,7 @@ router.post("/:id/donations", authMiddleware.authenticate, async (req, res) => {
     const userId = req.user.user_id;
 
     // Check if user is recording their own donation
-    if (parseInt(id) !== userId) {
+    if (id !== userId) {
       return res.status(403).json({
         status: "error",
         message: "Not authorized to record donation for this donor",
@@ -523,7 +545,7 @@ router.post("/:id/donations", authMiddleware.authenticate, async (req, res) => {
       .from("donors")
       .update({
         last_donation_date: donation_date,
-        donation_count: supabase.sql`donation_count + 1`
+        donation_count: supabase.sql`donation_count + 1`,
       })
       .eq("donor_id", id)
       .select("qloo_taste_keywords, donation_count")
@@ -548,7 +570,7 @@ router.post("/:id/donations", authMiddleware.authenticate, async (req, res) => {
       data: {
         donation,
         reward_coupons: issuedCoupons,
-        total_donations: updatedDonor?.donation_count || 1
+        total_donations: updatedDonor?.donation_count || 1,
       },
     });
   } catch (error) {
@@ -574,11 +596,11 @@ async function issueDonationRewardCoupons(donorId, donorData) {
     { count: 5, message: "5 donations milestone!" },
     { count: 10, message: "10 donations milestone!" },
     { count: 25, message: "25 donations milestone!" },
-    { count: 50, message: "50 donations milestone!" }
+    { count: 50, message: "50 donations milestone!" },
   ];
 
   // Check if this donation hits a milestone
-  const milestone = milestones.find(m => m.count === donationCount);
+  const milestone = milestones.find((m) => m.count === donationCount);
 
   if (milestone) {
     // Get available coupons
@@ -597,7 +619,10 @@ async function issueDonationRewardCoupons(donorId, donorData) {
         milestone.count >= 10 ? 3 : 2 // More coupons for higher milestones
       );
 
-      if (recommendations.success && recommendations.recommendations.length > 0) {
+      if (
+        recommendations.success &&
+        recommendations.recommendations.length > 0
+      ) {
         // Issue the recommended coupons
         for (const coupon of recommendations.recommendations) {
           try {
@@ -609,12 +634,14 @@ async function issueDonationRewardCoupons(donorId, donorData) {
                 donor_id: donorId,
                 coupon_id: coupon.coupon_id,
                 unique_redemption_code: redemptionCode,
-                status: "Issued"
+                status: "Issued",
               })
-              .select(`
+              .select(
+                `
                 *,
                 coupons!inner(coupon_title, partner_name, expiry_date)
-              `)
+              `
+              )
               .single();
 
             if (!issueError) {
@@ -622,14 +649,14 @@ async function issueDonationRewardCoupons(donorId, donorData) {
               await supabase
                 .from("coupons")
                 .update({
-                  quantity_redeemed: supabase.sql`quantity_redeemed + 1`
+                  quantity_redeemed: supabase.sql`quantity_redeemed + 1`,
                 })
                 .eq("coupon_id", coupon.coupon_id);
 
               issuedCoupons.push({
                 ...issuedCoupon,
                 milestone: milestone.message,
-                match_score: coupon.match_score
+                match_score: coupon.match_score,
               });
             }
           } catch (error) {
@@ -647,8 +674,8 @@ async function issueDonationRewardCoupons(donorId, donorData) {
  * Generate unique redemption code
  */
 function generateRedemptionCode() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
   for (let i = 0; i < 8; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -658,148 +685,161 @@ function generateRedemptionCode() {
 /**
  * Get personalized coupon recommendations for donor
  */
-router.get("/:id/coupon-recommendations", authMiddleware.authenticate, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { limit = 5 } = req.query;
-    const userId = req.user.user_id;
+router.get(
+  "/:id/coupon-recommendations",
+  authMiddleware.authenticate,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { limit = 5 } = req.query;
+      const userId = req.user.user_id;
 
-    // Check if user is accessing their own recommendations
-    if (parseInt(id) !== userId) {
-      return res.status(403).json({
+      // Check if user is accessing their own recommendations
+      if (id !== userId) {
+        return res.status(403).json({
+          status: "error",
+          message: "Not authorized to access these recommendations",
+        });
+      }
+
+      // Get donor's interests
+      const { data: donor, error: donorError } = await supabase
+        .from("donors")
+        .select("qloo_taste_keywords")
+        .eq("donor_id", id)
+        .single();
+
+      if (donorError || !donor) {
+        return res.status(404).json({
+          status: "error",
+          message: "Donor not found",
+        });
+      }
+
+      // Get available coupons
+      const { data: coupons, error: couponsError } = await supabase
+        .from("coupons")
+        .select("*")
+        .gt("quantity_total", 0)
+        .where("quantity_redeemed", "lt", "quantity_total")
+        .or("expiry_date.is.null,expiry_date.gte.now()");
+
+      if (couponsError) {
+        console.error("Error fetching coupons:", couponsError);
+        return res.status(500).json({
+          status: "error",
+          message: "Failed to fetch available coupons",
+        });
+      }
+
+      // Generate recommendations using Qloo
+      const recommendations = await qlooService.generateCouponRecommendations(
+        donor.qloo_taste_keywords || [],
+        coupons || [],
+        parseInt(limit)
+      );
+
+      res.json({
+        status: "success",
+        data: recommendations,
+      });
+    } catch (error) {
+      console.error("Coupon recommendations error:", error);
+      res.status(500).json({
         status: "error",
-        message: "Not authorized to access these recommendations",
+        message: "Internal server error",
       });
     }
-
-    // Get donor's interests
-    const { data: donor, error: donorError } = await supabase
-      .from("donors")
-      .select("qloo_taste_keywords")
-      .eq("donor_id", id)
-      .single();
-
-    if (donorError || !donor) {
-      return res.status(404).json({
-        status: "error",
-        message: "Donor not found",
-      });
-    }
-
-    // Get available coupons
-    const { data: coupons, error: couponsError } = await supabase
-      .from("coupons")
-      .select("*")
-      .gt("quantity_total", 0)
-      .where("quantity_redeemed", "lt", "quantity_total")
-      .or("expiry_date.is.null,expiry_date.gte.now()");
-
-    if (couponsError) {
-      console.error("Error fetching coupons:", couponsError);
-      return res.status(500).json({
-        status: "error",
-        message: "Failed to fetch available coupons",
-      });
-    }
-
-    // Generate recommendations using Qloo
-    const recommendations = await qlooService.generateCouponRecommendations(
-      donor.qloo_taste_keywords || [],
-      coupons || [],
-      parseInt(limit)
-    );
-
-    res.json({
-      status: "success",
-      data: recommendations,
-    });
-  } catch (error) {
-    console.error("Coupon recommendations error:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Internal server error",
-    });
   }
-});
+);
 
 /**
  * Enrich donor interests using Qloo
  */
-router.post("/:id/enrich-interests", authMiddleware.authenticate, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.user_id;
+router.post(
+  "/:id/enrich-interests",
+  authMiddleware.authenticate,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.user_id;
 
-    // Check if user is updating their own profile
-    if (parseInt(id) !== userId) {
-      return res.status(403).json({
+      // Check if user is updating their own profile
+      if (id !== userId) {
+        return res.status(403).json({
+          status: "error",
+          message: "Not authorized to update this donor",
+        });
+      }
+
+      // Get current interests
+      const { data: donor, error: donorError } = await supabase
+        .from("donors")
+        .select("qloo_taste_keywords")
+        .eq("donor_id", id)
+        .single();
+
+      if (donorError || !donor) {
+        return res.status(404).json({
+          status: "error",
+          message: "Donor not found",
+        });
+      }
+
+      const currentInterests = donor.qloo_taste_keywords || [];
+
+      if (currentInterests.length === 0) {
+        return res.status(400).json({
+          status: "error",
+          message:
+            "No interests found to enrich. Please add some interests first.",
+        });
+      }
+
+      // Enrich interests using Qloo
+      const enrichedKeywords = await qlooService.getTasteProfile(
+        currentInterests
+      );
+
+      // Combine original and enriched interests
+      const allInterests = [
+        ...new Set([...currentInterests, ...enrichedKeywords]),
+      ];
+
+      // Update donor's interests
+      const { error: updateError } = await supabase
+        .from("donors")
+        .update({
+          qloo_taste_keywords: allInterests,
+        })
+        .eq("donor_id", id);
+
+      if (updateError) {
+        console.error("Error updating enriched interests:", updateError);
+        return res.status(500).json({
+          status: "error",
+          message: "Failed to update enriched interests",
+        });
+      }
+
+      res.json({
+        status: "success",
+        message: "Interests enriched successfully",
+        data: {
+          original_count: currentInterests.length,
+          enriched_count: allInterests.length,
+          new_interests: enrichedKeywords,
+          all_interests: allInterests,
+        },
+      });
+    } catch (error) {
+      console.error("Interest enrichment error:", error);
+      res.status(500).json({
         status: "error",
-        message: "Not authorized to update this donor",
+        message: "Internal server error",
       });
     }
-
-    // Get current interests
-    const { data: donor, error: donorError } = await supabase
-      .from("donors")
-      .select("qloo_taste_keywords")
-      .eq("donor_id", id)
-      .single();
-
-    if (donorError || !donor) {
-      return res.status(404).json({
-        status: "error",
-        message: "Donor not found",
-      });
-    }
-
-    const currentInterests = donor.qloo_taste_keywords || [];
-
-    if (currentInterests.length === 0) {
-      return res.status(400).json({
-        status: "error",
-        message: "No interests found to enrich. Please add some interests first.",
-      });
-    }
-
-    // Enrich interests using Qloo
-    const enrichedKeywords = await qlooService.getTasteProfile(currentInterests);
-
-    // Combine original and enriched interests
-    const allInterests = [...new Set([...currentInterests, ...enrichedKeywords])];
-
-    // Update donor's interests
-    const { error: updateError } = await supabase
-      .from("donors")
-      .update({
-        qloo_taste_keywords: allInterests,
-      })
-      .eq("donor_id", id);
-
-    if (updateError) {
-      console.error("Error updating enriched interests:", updateError);
-      return res.status(500).json({
-        status: "error",
-        message: "Failed to update enriched interests",
-      });
-    }
-
-    res.json({
-      status: "success",
-      message: "Interests enriched successfully",
-      data: {
-        original_count: currentInterests.length,
-        enriched_count: allInterests.length,
-        new_interests: enrichedKeywords,
-        all_interests: allInterests,
-      },
-    });
-  } catch (error) {
-    console.error("Interest enrichment error:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Internal server error",
-    });
   }
-});
+);
 
 module.exports = router;
