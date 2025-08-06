@@ -10,6 +10,32 @@ const authMiddleware = new AuthMiddleware();
 router.use(authMiddleware.authenticate);
 
 /**
+ * Clean AI response by removing internal reasoning and thinking tags
+ */
+function cleanAIResponse(response) {
+  if (!response) return "";
+
+  // Remove thinking tags and their content
+  let cleaned = response.replace(/###<think>[\s\S]*?<\/think>###/gi, "");
+
+  // Remove any remaining thinking patterns
+  cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, "");
+  cleaned = cleaned.replace(/\*\*\*thinking[\s\S]*?\*\*\*/gi, "");
+  cleaned = cleaned.replace(/\[thinking[\s\S]*?\]/gi, "");
+
+  // Remove multiple newlines and extra whitespace
+  cleaned = cleaned.replace(/\n\s*\n\s*\n/g, "\n\n");
+  cleaned = cleaned.trim();
+
+  // If response is empty after cleaning, provide a fallback
+  if (!cleaned) {
+    return "I'm here to support you. How can I help you today?";
+  }
+
+  return cleaned;
+}
+
+/**
  * CareBot Chat Query - AI-powered patient support
  */
 router.post("/carebot/query", async (req, res) => {
@@ -106,31 +132,54 @@ Guidelines:
           apiKey: process.env.HF_TOKEN,
         });
 
-        // Create chat completion
+        // Create chat completion with fine-tuned dataset approach
+        const systemPrompt = `You are a supportive companion for a Thalassemia patient in India. Use the user's known interests to provide comfort and suggest positive distractions. Do not give medical advice. 
+
+User Context: {"interests": [${userContext.interests
+          .map((i) => `"${i}"`)
+          .join(", ")}]}
+
+Guidelines:
+- Be empathetic and understanding
+- Use their interests to suggest activities or distractions when appropriate
+- Keep responses warm and encouraging
+- Avoid giving medical advice - always refer to doctors for medical questions
+- Use examples from their interests (movies, sports, books, etc.)
+- Be supportive about their condition without being overly clinical
+- Keep responses conversational and friendly
+- Respond naturally to their emotions and concerns
+
+IMPORTANT: Respond directly without showing any internal thinking, reasoning, or <think> tags. Give only the final supportive response.`;
+
         const chatCompletion = await client.chat.completions.create({
           model: process.env.HF_MODEL_REPO_ID,
           messages: [
             {
               role: "system",
-              content: `You are CareBot, a compassionate AI companion for patients with blood disorders like Thalassemia. You provide emotional support, encouragement, and helpful information.
-
-Patient Information:
-- Name: ${userContext.name}
-- Medical Conditions: ${userContext.medicalConditions}
-- Interests: ${userContext.interests.join(", ") || "None specified"}
-
-Respond with empathy, understanding, and support. Keep responses warm, encouraging, and appropriate for someone managing a chronic condition.`,
+              content: systemPrompt,
             },
             {
               role: "user",
               content: message,
             },
           ],
-          max_tokens: 150,
+          max_tokens: 300,
           temperature: 0.7,
         });
 
-        const botResponse = chatCompletion.choices[0].message.content.trim();
+        let botResponse = chatCompletion.choices[0].message.content.trim();
+
+        // Clean up response - remove thinking tags and internal reasoning
+        botResponse = cleanAIResponse(botResponse);
+
+        // Check if response seems incomplete (ends abruptly without punctuation)
+        if (botResponse && !botResponse.match(/[.!?]$/)) {
+          console.log(
+            "CareBot Debug - Response seems incomplete, adding completion"
+          );
+          botResponse += "... I'm here to support you through this journey.";
+        }
+
         console.log("CareBot Debug - Using OpenAI response:", botResponse);
 
         // Save chat history
@@ -211,37 +260,125 @@ router.get("/carebot/history", async (req, res) => {
 });
 
 /**
- * Fallback response generator for when AI is unavailable
+ * Fallback response generator based on fine-tuned dataset patterns
  */
 function generateFallbackResponse(message, userContext) {
   const lowerMessage = message.toLowerCase();
+  const interests = userContext.interests || [];
+
+  // Feeling down/sad responses
+  if (
+    lowerMessage.includes("down") ||
+    lowerMessage.includes("sad") ||
+    lowerMessage.includes("depressed")
+  ) {
+    if (interests.includes("movies")) {
+      return "I'm sorry to hear that. It's completely okay to feel this way. Since you enjoy movies, maybe watching a fun comedy like '3 Idiots' could help lift your spirits? Sometimes a good distraction is the best medicine.";
+    }
+    if (interests.includes("music")) {
+      return "I'm sorry you're feeling sad. It's okay to have those feelings. Maybe putting on some of your favorite music could help? Music has a wonderful way of lifting our spirits.";
+    }
+    return "I'm sorry you're feeling sad. It's okay to have those feelings. Just know that I'm here to listen if you want to talk about it. Sometimes just sharing what's on your mind can make a difference.";
+  }
+
+  // Tired/exhausted responses
+  if (
+    lowerMessage.includes("tired") ||
+    lowerMessage.includes("exhausted") ||
+    lowerMessage.includes("hospital")
+  ) {
+    if (interests.includes("reading") || interests.includes("music")) {
+      return "I can only imagine how exhausting that must be. It takes incredible strength to go through that so often. When you get home, perhaps putting on some calming music you enjoy or getting lost in a good book could help you relax and recharge. You're doing great.";
+    }
+    return "I can only imagine how exhausting that must be. It takes incredible strength to go through that so often. Make sure to rest and take care of yourself. You're doing great.";
+  }
+
+  // Bored responses
+  if (lowerMessage.includes("bored")) {
+    if (interests.includes("video games") || interests.includes("games")) {
+      return "Boredom is the worst! How about we fire up a video game? We could try to beat your high score in that racing game or start a new adventure. What are you in the mood to play?";
+    }
+    if (interests.includes("reading")) {
+      return "Let's see! It could be a perfect day to dive into that book you started. There's nothing like getting lost in a good story. Where did you leave off?";
+    }
+    return "Boredom can be tough! Is there a hobby or activity you enjoy that we could explore together?";
+  }
+
+  // Frustrated responses
+  if (lowerMessage.includes("frustrated") || lowerMessage.includes("angry")) {
+    if (interests.includes("gardening")) {
+      return "Frustration is a totally valid feeling. It's okay to be upset. Sometimes doing something calm and focused can help. How about we check on your plants? Seeing something you're nurturing grow can be very rewarding.";
+    }
+    return "Frustration is a totally valid feeling. It's okay to be upset. Sometimes taking a step back and doing something you enjoy can help process those feelings.";
+  }
+
+  // Anxious responses
+  if (
+    lowerMessage.includes("anxious") ||
+    lowerMessage.includes("nervous") ||
+    lowerMessage.includes("check-up")
+  ) {
+    if (interests.includes("music") || interests.includes("guitar")) {
+      return "It's completely normal to feel anxious before a check-up. Taking your mind off it for a bit might help. Have you tried learning that new song on your guitar? Focusing on the chords and melody can be a great way to calm your nerves.";
+    }
+    return "It's completely normal to feel anxious. Taking your mind off it for a bit might help. Is there something you enjoy doing that could help you relax?";
+  }
+
+  // Medical questions
+  if (
+    lowerMessage.includes("medicine") ||
+    lowerMessage.includes("medication")
+  ) {
+    return "It can definitely feel like a lot to manage. Each medicine has a very specific and important job to do to keep you healthy. But for a detailed explanation of what each one does, your doctor is the best person to ask.";
+  }
+
+  // Food/diet questions
+  if (
+    lowerMessage.includes("food") ||
+    lowerMessage.includes("eat") ||
+    lowerMessage.includes("diet")
+  ) {
+    if (interests.includes("cooking") || interests.includes("food")) {
+      return "That's a great question! While I'm not a doctor, I know that a balanced diet is super important. Since you enjoy cooking, maybe we could find some fun recipes that include healthy ingredients? It's always best to discuss a detailed diet plan with your doctor.";
+    }
+    return "That's a great question about nutrition! While I can't give specific medical advice, it's always best to discuss diet plans with your doctor who knows your specific needs.";
+  }
+
+  // Sports/activity questions
+  if (
+    lowerMessage.includes("sports") ||
+    lowerMessage.includes("play") ||
+    lowerMessage.includes("exercise")
+  ) {
+    return "It's awesome that you want to be active! Many people with Thalassemia can enjoy sports. Non-contact sports like badminton, swimming, or cycling are often great choices. It's really important to talk to your doctor first, as they can give you the best advice based on your health.";
+  }
+
+  // Lonely responses
+  if (lowerMessage.includes("lonely") || lowerMessage.includes("alone")) {
+    if (interests.includes("writing") || interests.includes("stories")) {
+      return "That's a tough feeling, and I'm sorry you're experiencing it. Sometimes getting lost in another world can help. Since you enjoy writing stories, maybe we could start a new one? What if we came up with a character who goes on an amazing adventure?";
+    }
+    return "That's a tough feeling, and I'm sorry you're experiencing it. Remember, you're not alone - I'm here to listen, and there are people who care about you.";
+  }
+
+  // Confidence issues
+  if (
+    lowerMessage.includes("confident") ||
+    lowerMessage.includes("self-esteem")
+  ) {
+    if (interests.includes("fashion") || interests.includes("design")) {
+      return "I'm sorry you're feeling that way. Confidence can be tricky. But you have a great eye for fashion and design! Maybe we could try sketching some new outfit ideas or creating a mood board for a new look? Expressing your unique style is a powerful way to boost your confidence.";
+    }
+    return "I'm sorry you're feeling that way. Confidence can be tricky, but remember that you have unique strengths and talents. What's something you're good at that makes you feel proud?";
+  }
 
   // Greeting responses
   if (lowerMessage.includes("hello") || lowerMessage.includes("hi")) {
-    return `Hello ${userContext.name}! I'm CareBot, here to support you on your health journey. How are you feeling today?`;
-  }
-
-  // Medical condition responses
-  if (lowerMessage.includes("thalassemia") || lowerMessage.includes("anemia")) {
-    return `I understand managing ${userContext.medicalConditions} can be challenging. Remember to take your medications as prescribed, stay hydrated, and don't hesitate to reach out to your healthcare team. You're doing great by staying informed!`;
-  }
-
-  // Donation/transfusion responses
-  if (lowerMessage.includes("transfusion") || lowerMessage.includes("blood")) {
-    return `Blood transfusions are an important part of treatment for many patients. It's normal to have questions or concerns. Always discuss any worries with your medical team - they're there to help you feel comfortable and safe.`;
-  }
-
-  // Emotional support responses
-  if (
-    lowerMessage.includes("scared") ||
-    lowerMessage.includes("worried") ||
-    lowerMessage.includes("anxious")
-  ) {
-    return `It's completely normal to feel worried sometimes. You're being so brave by managing your health condition. Remember that you have a whole support system - your doctors, family, and community. Take things one day at a time. 💙`;
+    return `Hello! I'm here to support you. How are you feeling today?`;
   }
 
   // Default supportive response
-  return `Thank you for sharing that with me, ${userContext.name}. I'm here to listen and support you. Remember that managing a blood disorder is a journey, and you don't have to face it alone. Is there anything specific you'd like to talk about today?`;
+  return "I'm here to listen and support you. Remember that you're not alone in this journey. Is there anything specific you'd like to talk about?";
 }
 
 /**
