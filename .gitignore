@@ -143,9 +143,36 @@ Thumbs.db
 
 # Zencoder configuration (contains sensitive information)
 .zencoder
+.zencoder/
+**/.zencoder
+**/.zencoder/
+
+# IDE files and directories
+.idea/
+**/.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
+# Log files
+*.log
+**/*.log
+logs/
+**logs/
 
 # Sensitive credential files
 **/keys_from_supabase_dashboard.txt
 **/credentials.txt
 **/secrets.txt
 test_connection.sh
+
+# Temporary and cache files
+.cache/
+**/.cache/
+.tmp/
+**/.tmp/
+*.tmp
+*.temp
