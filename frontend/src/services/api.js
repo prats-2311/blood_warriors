@@ -20,18 +20,17 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      // Use JWT tokens from localStorage instead of Supabase session
+      const accessToken = localStorage.getItem("blood_warriors_access_token");
 
-      if (session?.access_token) {
-        config.headers.Authorization = `Bearer ${session.access_token}`;
-        console.log("Added auth token to request:", config.url);
+      if (accessToken) {
+        config.headers.Authorization = `Bearer ${accessToken}`;
+        console.log("Added JWT token to request:", config.url);
       } else {
-        console.log("No session found for request:", config.url);
+        console.log("No JWT token found for request:", config.url);
       }
     } catch (error) {
-      console.error("Error getting session for API request:", error);
+      console.error("Error getting JWT token for API request:", error);
     }
 
     return config;
@@ -80,14 +79,24 @@ api.interceptors.response.use(
       // Only redirect to login if we're not already on login page
       // and if this is not a chat history request (which can fail gracefully)
       const currentPath = window.location.pathname;
-      const isLoginPage = currentPath === '/login' || currentPath === '/';
-      const isChatHistoryRequest = error.config?.url?.includes('/ai/carebot/history');
+      const isLoginPage = currentPath === "/login" || currentPath === "/";
+      const isChatHistoryRequest = error.config?.url?.includes(
+        "/ai/carebot/history"
+      );
 
       if (!isLoginPage && !isChatHistoryRequest) {
-        console.log("Authentication failed, redirecting to login");
+        console.log(
+          "Authentication failed, clearing tokens and redirecting to login"
+        );
+        // Clear invalid tokens
+        localStorage.removeItem("blood_warriors_access_token");
+        localStorage.removeItem("blood_warriors_refresh_token");
         window.location.href = "/login";
       } else {
-        console.log("Authentication failed but not redirecting:", { currentPath, isChatHistoryRequest });
+        console.log("Authentication failed but not redirecting:", {
+          currentPath,
+          isChatHistoryRequest,
+        });
       }
     }
 

@@ -1,12 +1,12 @@
-import { useContext, useEffect, useState, useCallback } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { AuthContext } from '../contexts/JWTAuthContext';
+import { useContext, useEffect, useState, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { AuthContext } from "../contexts/JWTAuthContext";
 
 // Main authentication hook
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -14,7 +14,7 @@ export const useAuth = () => {
 // Hook for role-based access control
 export const useRoleAccess = (allowedRoles = []) => {
   const { user, loading } = useAuth();
-  
+
   const hasAccess = () => {
     if (loading) return false;
     if (!user) return false;
@@ -48,12 +48,17 @@ export const useAuthRequired = () => {
 };
 
 // Hook for guest-only pages (redirect authenticated users)
-export const useGuestOnly = (redirectTo = '/app/dashboard') => {
+export const useGuestOnly = (redirectTo = "/app/dashboard") => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) {
+    // Only redirect if we're definitely authenticated and not loading
+    if (!loading && user && user.id) {
+      console.log(
+        "🔄 Guest-only page: redirecting authenticated user to",
+        redirectTo
+      );
       navigate(redirectTo, { replace: true });
     }
   }, [user, loading, navigate, redirectTo]);
@@ -82,12 +87,13 @@ export const useLogin = () => {
       await login(credentials.email, credentials.password, rememberMe);
 
       // Determine redirect location
-      const from = location.state?.from?.pathname || redirectTo || '/app/dashboard';
+      const from =
+        location.state?.from?.pathname || redirectTo || "/app/dashboard";
       navigate(from, { replace: true });
 
       return { success: true };
     } catch (err) {
-      const errorMessage = err.message || 'Login failed';
+      const errorMessage = err.message || "Login failed";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -111,14 +117,14 @@ export const useLogout = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogout = async (redirectTo = '/') => {
+  const handleLogout = async (redirectTo = "/") => {
     setIsLoading(true);
-    
+
     try {
       await logout();
       navigate(redirectTo, { replace: true });
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
       // Even if logout fails on server, clear local state
       navigate(redirectTo, { replace: true });
     } finally {
@@ -140,7 +146,7 @@ export const useRegister = () => {
   const [error, setError] = useState(null);
 
   const handleRegister = async (userData, options = {}) => {
-    const { redirectTo = '/login' } = options;
+    const { redirectTo = "/login" } = options;
 
     setIsLoading(true);
     setError(null);
@@ -152,14 +158,15 @@ export const useRegister = () => {
       navigate(redirectTo, {
         replace: true,
         state: {
-          message: 'Registration successful! Please check your email to verify your account.',
-          email: userData.email
-        }
+          message:
+            "Registration successful! Please check your email to verify your account.",
+          email: userData.email,
+        },
       });
 
       return { success: true, data: result };
     } catch (err) {
-      const errorMessage = err.message || 'Registration failed';
+      const errorMessage = err.message || "Registration failed";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -191,10 +198,10 @@ export const usePasswordManagement = () => {
 
     try {
       const result = await forgotPassword(email);
-      setSuccess(result.message || 'Password reset email sent successfully');
+      setSuccess(result.message || "Password reset email sent successfully");
       return { success: true, data: result };
     } catch (err) {
-      const errorMessage = err.message || 'Failed to send reset email';
+      const errorMessage = err.message || "Failed to send reset email";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -209,10 +216,10 @@ export const usePasswordManagement = () => {
 
     try {
       const result = await resetPassword(token, password, confirmPassword);
-      setSuccess(result.message || 'Password reset successfully');
+      setSuccess(result.message || "Password reset successfully");
       return { success: true, data: result };
     } catch (err) {
-      const errorMessage = err.message || 'Failed to reset password';
+      const errorMessage = err.message || "Failed to reset password";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -220,17 +227,25 @@ export const usePasswordManagement = () => {
     }
   };
 
-  const handleChangePassword = async (currentPassword, newPassword, confirmPassword) => {
+  const handleChangePassword = async (
+    currentPassword,
+    newPassword,
+    confirmPassword
+  ) => {
     setIsLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
-      const result = await changePassword(currentPassword, newPassword, confirmPassword);
-      setSuccess(result.message || 'Password changed successfully');
+      const result = await changePassword(
+        currentPassword,
+        newPassword,
+        confirmPassword
+      );
+      setSuccess(result.message || "Password changed successfully");
       return { success: true, data: result };
     } catch (err) {
-      const errorMessage = err.message || 'Failed to change password';
+      const errorMessage = err.message || "Failed to change password";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -268,7 +283,7 @@ export const useProfile = () => {
       const result = await updateProfile(profileData);
       return { success: true, data: result };
     } catch (err) {
-      const errorMessage = err.message || 'Failed to update profile';
+      const errorMessage = err.message || "Failed to update profile";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -303,4 +318,4 @@ export const useAuthStatus = () => {
 };
 
 // Export AuthContext for backward compatibility (if needed)
-export { AuthContext } from '../contexts/JWTAuthContext';
+export { AuthContext } from "../contexts/JWTAuthContext";
