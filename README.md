@@ -1,50 +1,47 @@
+<p align=center>
+  <img src=https://img.shields.io/badge/node-v10.16.0-brightgreen.svg?style=flat-square alt="node" />
+  <img src=https://img.shields.io/badge/npm-v5.6.0-blue.svg?style=flat-square alt="npm" />
+  <a href=https://github.com/blood-warriors/blood-warriors/blob/master/LICENSE>
+    <img src=https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square alt="License: MIT" />
+  </a>
+  <a href=https://github.com/blood-warriors/blood-warriors/blob/master/.github/contributing.md>
+    <img src=https://img.shields.io/badge/contributions-welcome-orange.svg?style=flat-square alt="Contributions Welcome" />
+  </a>
+  <a href=https://vercel.com>
+    <img src=https://img.shields.io/badge/Powered_by-Vercel-black?style=flat-square alt="Powered by Netlify">
+  </a>
+</p>
+
 # Blood Warriors - Blood Donation Platform
 
-A simple and clean blood donation platform built with React and Node.js.
+A simple and clean blood donation platform built with Next.js.
 
-## Quick Start
+## Getting Started
 
-1. **Install Dependencies**
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
-   ```bash
-   # Backend
-   cd backend && npm install
+### Prerequisites
 
-   # Frontend
-   cd ../frontend && npm install
-   ```
+You will need the following properly installed on your computer.
 
-2. **Environment Setup**
+- [Git](http://git-scm.com/)
+- [Node](http://nodejs.org/)
+- [NVM](https://github.com/creationix/nvm)
+- [NextJS](https://nextjs.org/)
 
-   ```bash
-   # Copy environment files
-   cp backend/.env.example backend/.env
-   cp frontend/.env.example frontend/.env
+## Installing
 
-   # Update with your Supabase credentials
-   ```
+In a terminal window run these commands.
 
-3. **Database Setup**
+```sh
+$ git clone https://github.com/blood-warriors/blood-warriors.git
+$ cd blood-warriors
+$ nvm install
+$ npm install
+$ npm run dev
+```
 
-   ```bash
-   # Apply migrations
-   supabase db push
-   ```
-
-4. **Start Application**
-
-   ```bash
-   # Start both servers
-   ./start.sh
-
-   # Or manually:
-   # Backend: cd backend && npm start
-   # Frontend: cd frontend && npm start
-   ```
-
-5. **Access Application**
-   - Frontend: http://localhost:3100
-   - Backend API: http://localhost:4000
+You should be able to view the website locally at `http://localhost:3000/`.
 
 ## Features
 
@@ -55,17 +52,43 @@ A simple and clean blood donation platform built with React and Node.js.
 
 ## Tech Stack
 
-- **Frontend**: React, React Router
-- **Backend**: Node.js, Express
+- **Frontend**: Next.js
+- **Backend**: Next.js API routes
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
 
-## Project Structure
+## Testing
 
+In a terminal window run these commands.
+
+```sh
+$ cd blood-warriors
+$ npm run test
 ```
-blood_warriors/
-├── backend/          # Node.js API server
-├── frontend/         # React application
-├── supabase/         # Database migrations
-└── start.sh          # Quick start script
+
+For watch mode:
+
+```sh
+$ npm run test:watch
 ```
+
+To view the coverage report:
+
+```sh
+$ npm run test:coverage
+$ npm run view:coverage
+```
+
+To update snapshots:
+
+```sh
+$ npm run test -- --updateSnapshot
+```
+
+## Contributing
+
+Please read our contributing guidelines for details on our code of conduct and the process for submitting issues and/or pull requests.
+
+## License
+
+This project is licensed under the MIT License - please see the LICENSE file for more details.
